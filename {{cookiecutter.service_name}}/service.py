@@ -48,16 +48,27 @@ class CustomStacIO(DefaultStacIO):
 
     def __init__(self):
         self.session = botocore.session.Session()
-        self.s3_client = self.session.create_client(
-            service_name="s3",
-            region_name=os.environ.get("AWS_REGION"),
-            endpoint_url=os.environ.get("AWS_S3_ENDPOINT"),
-            aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-            verify=True,
-            use_ssl=True,
-            config=Config(s3={"addressing_style": "path", "signature_version": "s3v4"}),
-        )
+        # Two pathways provided here to support authorisation via:
+        # 1) AWS credentials, when keys are provided as environment variables or,
+        # 2) Service Account, when AWS credentials are not provided as environment variables
+        if os.environ["AWS_ACCESS_KEY_ID"] and os.environ["AWS_SECRET_ACCESS_KEY"]:
+            self.s3_client = self.session.create_client(
+                service_name="s3",
+                region_name=os.environ.get("AWS_REGION"),
+                endpoint_url=os.environ.get("AWS_S3_ENDPOINT"),
+                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+                aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+                verify=True,
+                use_ssl=True,
+                config=Config(s3={"addressing_style": "path", "signature_version": "s3v4"}),
+            )
+        else:
+            self.s3_client = self.session.create_client(
+                service_name="s3",
+                verify=True,
+                use_ssl=True,
+                config=Config(s3={"addressing_style": "path", "signature_version": "s3v4"}),
+            )
 
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
