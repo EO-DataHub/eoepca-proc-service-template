@@ -48,6 +48,9 @@ class CustomStacIO(DefaultStacIO):
 
     def __init__(self):
         self.session = botocore.session.Session()
+        # Two pathways provided here to support authorisation via:
+        # 1) AWS credentials, when keys are provided as environment variables or,
+        # 2) Service Account, when AWS credentials are not provided as environment variables
         if os.environ["AWS_ACCESS_KEY_ID"] and os.environ["AWS_SECRET_ACCESS_KEY"]:
             self.s3_client = self.session.create_client(
                 service_name="s3",
