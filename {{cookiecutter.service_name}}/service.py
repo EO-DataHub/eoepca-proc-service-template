@@ -121,7 +121,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         self.feature_collection = None
 
         self.init_config_defaults(self.conf)
-        self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}...{self.workspace_url}"
+        # self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}...{self.workspace_url}"
 
     def pre_execution_hook(self):
         try:
@@ -310,7 +310,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEOUT_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
-        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "eoepca2")
+        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "eoepca3")
 
         # DEBUG
         # logger.info(f"init_config_defaults: additional_parameters...\n{json.dumps(conf['additional_parameters'], indent=2)}\n")
