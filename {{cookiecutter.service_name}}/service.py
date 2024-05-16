@@ -121,6 +121,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         self.feature_collection = None
 
         self.init_config_defaults(self.conf)
+        self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}...{self.workspace_url}"
 
     def pre_execution_hook(self):
         try:
