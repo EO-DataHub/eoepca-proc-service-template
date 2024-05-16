@@ -179,7 +179,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = os.path.join("processing-results", self.conf["additional_parameters"]["collection_id"])
-            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}-{self.username}"
+            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}-{self.workspace_url}"
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
