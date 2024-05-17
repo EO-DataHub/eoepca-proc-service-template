@@ -100,9 +100,10 @@ StacIO.set_default(CustomStacIO)
 
 
 class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
-    def __init__(self, conf):
+    def __init__(self, conf, inputs):
         super().__init__()
         self.conf = conf
+        self.inputs = inputs
 
         self.http_proxy_env = os.environ.get("HTTP_PROXY", None)
 
@@ -136,7 +137,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 self.username = self.get_user_name(
                     jwt.decode(self.ades_rx_token, options={"verify_signature": False})
                 )
-                self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.username}"
+                # self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.username}" # Not set
 
             if self.use_workspace:
                 logger.info("Lookup storage details in Workspace")
@@ -181,6 +182,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = os.path.join("processing-results", self.conf["additional_parameters"]["collection_id"])
             # self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}-{self.workspace_url}"  # "-"
+            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.inputs}"
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -419,7 +421,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ) as stream:
             cwl = yaml.safe_load(stream)
 
-        execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf)
+        execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
             cwl=cwl,
