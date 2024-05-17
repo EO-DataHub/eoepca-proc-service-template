@@ -136,6 +136,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 self.username = self.get_user_name(
                     jwt.decode(self.ades_rx_token, options={"verify_signature": False})
                 )
+                self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.username}"
 
             if self.use_workspace:
                 logger.info("Lookup storage details in Workspace")
@@ -179,7 +180,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = os.path.join("processing-results", self.conf["additional_parameters"]["collection_id"])
-            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}-{self.workspace_url}"
+            # self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}-{self.workspace_url}"  # "-"
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -310,7 +311,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEOUT_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
-        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "eoepca3")
+        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "eoepca4")
 
         # DEBUG
         # logger.info(f"init_config_defaults: additional_parameters...\n{json.dumps(conf['additional_parameters'], indent=2)}\n")
