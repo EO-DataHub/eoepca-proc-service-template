@@ -115,6 +115,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = True
         else:
             self.use_workspace = False
+        self.workspace_name = self.inputs.get("workspace", {}).get("value", "")
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -182,7 +183,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = os.path.join("processing-results", self.conf["additional_parameters"]["collection_id"])
             # self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_prefix}-{self.workspace_url}"  # "-"
-            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.inputs}"
+            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = f"{self.workspace_name}"
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
