@@ -444,6 +444,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         os.chdir(working_dir)
 
+        runner._namespace_name = "ws-testworkflow"
+
         exit_status = runner.execute()
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
