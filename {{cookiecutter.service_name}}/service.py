@@ -444,7 +444,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         os.chdir(working_dir)
 
-        runner._namespace_name = "ws-testworkflow"
+        runner._namespace_name = "ws-" + inputs.get("workspace", {}).get("value", "default")
 
         exit_status = runner.execute()
 
