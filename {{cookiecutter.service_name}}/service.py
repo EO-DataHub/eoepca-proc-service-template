@@ -100,9 +100,10 @@ StacIO.set_default(CustomStacIO)
 
 
 class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
-    def __init__(self, conf):
+    def __init__(self, conf, inputs):
         super().__init__()
         self.conf = conf
+        self.inputs = inputs
 
         self.http_proxy_env = os.environ.get("HTTP_PROXY", None)
 
@@ -114,6 +115,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = True
         else:
             self.use_workspace = False
+        self.workspace_name = self.inputs.get("workspace", {}).get("value", "default")
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -178,6 +180,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = os.path.join("processing-results", self.conf["additional_parameters"]["collection_id"])
+            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -308,6 +311,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEOUT_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
+        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "default")
 
         # DEBUG
         # logger.info(f"init_config_defaults: additional_parameters...\n{json.dumps(conf['additional_parameters'], indent=2)}\n")
@@ -415,7 +419,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ) as stream:
             cwl = yaml.safe_load(stream)
 
-        execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf)
+        execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
             cwl=cwl,
@@ -436,6 +440,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             exist_ok=True,
         )
         os.chdir(working_dir)
+
+        runner._namespace_name = "ws-" + inputs.get("workspace", {}).get("value", "default")
 
         exit_status = runner.execute()
 
