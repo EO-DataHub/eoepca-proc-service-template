@@ -422,6 +422,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ) as stream:
             cwl = yaml.safe_load(stream)
 
+        print(conf)
+        print(inputs)
+
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
