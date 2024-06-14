@@ -204,7 +204,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["AWS_SECRET_ACCESS_KEY"] = self.conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"]
             os.environ["AWS_REGION"] = self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
             os.environ["STAGEOUT_PULSAR_URL"] = self.conf["additional_parameters"]["STAGEOUT_PULSAR_URL"]
-            print(os.environ["STAGEOUT_PULSAR_URL"])
 
             StacIO.set_default(CustomStacIO)
 
@@ -314,7 +313,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
         conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "default")
-        conf["additional_parameters"]["STAGEOUT_PULSAR_URL"] = os.environ.get("STAGEOUT_PULSAR_URL", None)
 
         # DEBUG
         # logger.info(f"init_config_defaults: additional_parameters...\n{json.dumps(conf['additional_parameters'], indent=2)}\n")
@@ -421,9 +419,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             "r",
         ) as stream:
             cwl = yaml.safe_load(stream)
-
-        print(conf)
-        print(inputs)
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
