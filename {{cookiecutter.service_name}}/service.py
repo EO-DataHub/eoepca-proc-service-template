@@ -21,7 +21,6 @@ except ImportError:
 import json
 import os
 import sys
-import subprocess
 from urllib.parse import urlparse
 
 import boto3  # noqa: F401
@@ -36,8 +35,6 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
-# from kubernetes import client, config
-# from kubernetes.client.rest import ApiException
 
 # For DEBUG
 import traceback
@@ -119,7 +116,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         else:
             self.use_workspace = False
         self.workspace_name = self.inputs.get("workspace", {}).get("value", "default")
-        self.stageout_access_point = None
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -181,14 +177,10 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             else:
                 logger.info("Using pre-configured storage details")
 
-            self.stageout_access_point = "test-access-point"
-            logger.info(f"Found access point {self.stageout_access_point}")
-
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
             self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
-            self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"] = self.stageout_access_point
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -204,7 +196,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.unset_http_proxy_env()
 
             # DEBUG
-            logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
+            # logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
 
             logger.info("Set user bucket settings")
             os.environ["AWS_S3_ENDPOINT"] = self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
@@ -219,7 +211,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info(f"Read catalog => STAC Catalog URI: {output['StacCatalogUri']}")
             try:
                 s3_path = output["StacCatalogUri"]
-                cat = read_file(s3_path)
+                if s3_path.count("s3://")==0:
+                    s3_path = "s3://" + s3_path
+                cat = read_file( s3_path )
             except Exception as e:
                 logger.error(f"Exception: {e}")
 
@@ -229,8 +223,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             try:
                 collection = next(cat.get_all_collections())
                 logger.info("Got collection from outputs")
-            except Exception as e1:
-                logger.error(f"Exception: {e1}\nStack Trace:\n{traceback.format_exc()}")
+            except:
                 try:
                     items=cat.get_all_items()
                     itemFinal=[]
@@ -248,7 +241,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                     collection = ItemCollection(items=itemFinal)
                     logger.info("Created collection from items")
                 except Exception as e:
-                    logger.error(f"Exception: {e}\nStack Trace:\n{traceback.format_exc()}")
+                    logger.error(f"Exception: {e}"+str(e))
             
             # Trap the case of no output collection
             if collection is None:
@@ -305,20 +298,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["HTTP_PROXY"] = self.http_proxy_env
             logger.info(f"Restoring env HTTP_PROXY, to value {self.http_proxy_env}")
 
-    # def get_stageout_access_point_from_workspace(self):
-    #     # Load the kubernetes config
-    #     config.load_incluster_config()
-
-    #     # Create a Kubernetes API client
-    #     v1 = client.CoreV1Api()
-    #     try:
-    #         # Read the ConfigMap
-    #         configmap = v1.read_namespaced_config_map(name="workspace-config", namespace="ws-" + self.workspace_name)
-    #         bucket = configmap.data.get("S3_BUCKET_WORKSPACE")
-    #         return bucket
-    #     except ApiException as e:
-    #         logger.info(f"Exception when fetching workspace bucket: {e}")
-
     @staticmethod
     def init_config_defaults(conf):
         if "additional_parameters" not in conf:
@@ -335,7 +314,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
         conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "default")
-        conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"] = os.environ.get("STAGEOUT_ACCESS_POINT", None)
         conf["additional_parameters"]["STAGEOUT_PULSAR_URL"] = os.environ.get("STAGEOUT_PULSAR_URL", None)
         conf["additional_parameters"]["WORKSPACE_DOMAIN"] = os.environ.get("WORKSPACE_DOMAIN", None)
 
