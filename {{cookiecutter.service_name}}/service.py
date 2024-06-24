@@ -36,9 +36,6 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
-subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
-from kubernetes import client, config
-from kubernetes.client.rest import ApiException
 
 # For DEBUG
 import traceback
@@ -306,6 +303,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info(f"Restoring env HTTP_PROXY, to value {self.http_proxy_env}")
 
     def get_stageout_access_point_from_workspace(workspace_name: str) -> str:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
+        from kubernetes import client, config
+        from kubernetes.client.rest import ApiException
         # Load the kubernetes config
         config.load_incluster_config()
 
