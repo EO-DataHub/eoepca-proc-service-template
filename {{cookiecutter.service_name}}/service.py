@@ -196,7 +196,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.unset_http_proxy_env()
 
             # DEBUG
-            # logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
+            logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
 
             logger.info("Set user bucket settings")
             os.environ["AWS_S3_ENDPOINT"] = self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
@@ -223,7 +223,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             try:
                 collection = next(cat.get_all_collections())
                 logger.info("Got collection from outputs")
-            except:
+            except Exception as e1:
+                logger.error(f"Exception: {e1}\nStack Trace:\n{traceback.format_exc()}")
                 try:
                     items=cat.get_all_items()
                     itemFinal=[]
@@ -241,7 +242,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                     collection = ItemCollection(items=itemFinal)
                     logger.info("Created collection from items")
                 except Exception as e:
-                    logger.error(f"Exception: {e}"+str(e))
+                    logger.error(f"Exception: {e}\nStack Trace:\n{traceback.format_exc()}")
             
             # Trap the case of no output collection
             if collection is None:
