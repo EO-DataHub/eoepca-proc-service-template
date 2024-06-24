@@ -136,14 +136,13 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             # Load the kubernetes config
             config.load_incluster_config()
-
-            # Create a Kubernetes API client
             v1 = client.CoreV1Api()
+            access_point = None
             try:
-                # Read the ConfigMap
+                # Read workspace ConfigMap to find the stageout access point
                 configmap = v1.read_namespaced_config_map(name="workspace-config", namespace="ws-" + self.workspace_name)
-                bucket = configmap.data.get("S3_BUCKET_WORKSPACE")
-                logger.info(f"Found bucket {bucket}")
+                access_point = configmap.data.get("S3_BUCKET_WORKSPACE")
+                logger.info(f"Found access point {access_point}")
             except ApiException as e:
                 logger.info(f"Exception when fetching workspace bucket: {e}")
             
@@ -196,6 +195,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
             self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
+            self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"] = access_point
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
