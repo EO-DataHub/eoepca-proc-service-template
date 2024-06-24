@@ -119,6 +119,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         else:
             self.use_workspace = False
         self.workspace_name = self.inputs.get("workspace", {}).get("value", "default")
+        self.stageout_access_point = None
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -180,7 +181,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             else:
                 logger.info("Using pre-configured storage details")
 
-            self.stageout_access_point = self.get_stageout_access_point_from_workspace(self.workspace_name)
+            self.stageout_access_point = self.get_stageout_access_point_from_workspace()
             logger.info(f"Found access point {self.stageout_access_point}")
 
             lenv = self.conf.get("lenv", {})
@@ -304,7 +305,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["HTTP_PROXY"] = self.http_proxy_env
             logger.info(f"Restoring env HTTP_PROXY, to value {self.http_proxy_env}")
 
-    def get_stageout_access_point_from_workspace(workspace_name: str) -> str:
+    def get_stageout_access_point_from_workspace(self):
         # Load the kubernetes config
         config.load_incluster_config()
 
@@ -312,7 +313,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         v1 = client.CoreV1Api()
         try:
             # Read the ConfigMap
-            configmap = v1.read_namespaced_config_map(name="workspace-config", namespace="ws-" + workspace_name)
+            configmap = v1.read_namespaced_config_map(name="workspace-config", namespace="ws-" + self.workspace_name)
             bucket = configmap.data.get("S3_BUCKET_WORKSPACE")
             return bucket
         except ApiException as e:
