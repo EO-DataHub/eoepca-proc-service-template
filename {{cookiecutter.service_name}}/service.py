@@ -133,6 +133,19 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             # DEBUG
             # logger.info(f"zzz PRE-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
+
+            # Load the kubernetes config
+            config.load_incluster_config()
+
+            # Create a Kubernetes API client
+            v1 = client.CoreV1Api()
+            try:
+                # Read the ConfigMap
+                configmap = v1.read_namespaced_config_map(name="workspace-config", namespace="ws-" + self.workspace_name)
+                bucket = configmap.data.get("S3_BUCKET_WORKSPACE")
+                logger.info(f"Found bucket {bucket}")
+            except ApiException as e:
+                logger.info(f"Exception when fetching workspace bucket: {e}")
             
             # decode the JWT token to get the user name
             if self.ades_rx_token:
