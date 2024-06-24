@@ -316,7 +316,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             bucket = configmap.data.get("S3_BUCKET_WORKSPACE")
             return bucket
         except ApiException as e:
-            print(f"Exception when fetching workspace bucket: {e}", file=sys.stderr)
+            logger.info(f"Exception when fetching workspace bucket: {e}")
 
     @staticmethod
     def init_config_defaults(conf):
