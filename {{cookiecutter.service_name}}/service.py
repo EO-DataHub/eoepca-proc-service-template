@@ -226,7 +226,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info(f"Read catalog => STAC Catalog URI: {output['StacCatalogUri']}")
             try:
                 s3_path = output["StacCatalogUri"]
-                if s3_path.count("s3://")==0:
+                if not (s3_path.startswith("arn:aws:s3:") or s3_path.startswith("s3://")):
                     s3_path = "s3://" + s3_path
                 cat = read_file( s3_path )
             except Exception as e:
