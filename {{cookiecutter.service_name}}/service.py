@@ -50,6 +50,7 @@ class CustomStacIO(DefaultStacIO):
 
     def __init__(self):
         self.session = botocore.session.Session()
+        self.access_point = None
         # Two pathways provided here to support authorisation via:
         # 1) AWS credentials, when keys are provided as environment variables or,
         # 2) Service Account, when AWS credentials are not provided as environment variables
@@ -74,9 +75,10 @@ class CustomStacIO(DefaultStacIO):
 
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
+        bucket = self.access_point or parsed.netloc
         if parsed.scheme == "s3":
             return (
-                self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
+                self.s3_client.get_object(Bucket=bucket, Key=parsed.path[1:])[
                     "Body"
                 ]
                 .read()
@@ -87,10 +89,11 @@ class CustomStacIO(DefaultStacIO):
 
     def write_text(self, dest, txt, *args, **kwargs):
         parsed = urlparse(dest)
+        bucket = self.access_point or parsed.netloc
         if parsed.scheme == "s3":
             self.s3_client.put_object(
                 Body=txt.encode("UTF-8"),
-                Bucket=parsed.netloc,
+                Bucket=bucket,
                 Key=parsed.path[1:],
                 ContentType="application/geo+json",
             )
@@ -221,7 +224,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["STAGEOUT_PULSAR_URL"] = self.conf["additional_parameters"]["STAGEOUT_PULSAR_URL"]
             os.environ["WORKSPACE_DOMAIN"] = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
 
-            StacIO.set_default(CustomStacIO)
+            custom_stac_io = CustomStacIO()
+            custom_stac_io.access_point = self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"]
+            StacIO.set_default(custom_stac_io)
 
             logger.info(f"Read catalog => STAC Catalog URI: {output['StacCatalogUri']}")
             try:
