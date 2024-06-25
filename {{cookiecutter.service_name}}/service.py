@@ -73,6 +73,10 @@ class CustomStacIO(DefaultStacIO):
                 config=Config(s3={"addressing_style": "path", "signature_version": "s3v4"}),
             )
 
+    @classmethod
+    def set_access_point(cls, value):
+        cls.access_point = value
+
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
         bucket = self.access_point or parsed.netloc
@@ -224,9 +228,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["STAGEOUT_PULSAR_URL"] = self.conf["additional_parameters"]["STAGEOUT_PULSAR_URL"]
             os.environ["WORKSPACE_DOMAIN"] = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
 
-            custom_stac_io = CustomStacIO()
-            custom_stac_io.access_point = self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"]
-            StacIO.set_default(custom_stac_io)
+            CustomStacIO.set_access_point(self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"])
+            StacIO.set_default(CustomStacIO)
 
             logger.info(f"Read catalog => STAC Catalog URI: {output['StacCatalogUri']}")
             try:
