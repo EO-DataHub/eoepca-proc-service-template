@@ -211,7 +211,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.unset_http_proxy_env()
 
             # DEBUG
-            # logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
+            logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
 
             logger.info("Set user bucket settings")
             os.environ["AWS_S3_ENDPOINT"] = self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
@@ -226,10 +226,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info(f"Read catalog => STAC Catalog URI: {output['StacCatalogUri']}")
             try:
                 s3_path = output["StacCatalogUri"]
-                s3_path = s3_path.split("/", 1)[-1]
                 if not s3_path.startswith("s3://"):
                     s3_path = "s3://" + s3_path
-                logger.info(f"Final s3 path {s3_path}")
                 cat = read_file( s3_path )
             except Exception as e:
                 logger.error(f"Exception: {e}")
