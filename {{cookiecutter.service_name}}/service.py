@@ -80,6 +80,7 @@ class CustomStacIO(DefaultStacIO):
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
         bucket = self.access_point or parsed.netloc
+        logger.info(f"Reading file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             return (
                 self.s3_client.get_object(Bucket=bucket, Key=parsed.path[1:])[
@@ -94,6 +95,7 @@ class CustomStacIO(DefaultStacIO):
     def write_text(self, dest, txt, *args, **kwargs):
         parsed = urlparse(dest)
         bucket = self.access_point or parsed.netloc
+        logger.info(f"Writing file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             self.s3_client.put_object(
                 Body=txt.encode("UTF-8"),
