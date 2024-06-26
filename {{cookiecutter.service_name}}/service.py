@@ -343,6 +343,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
         conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "default")
         conf["additional_parameters"]["STAGEOUT_PULSAR_URL"] = os.environ.get("STAGEOUT_PULSAR_URL", None)
+        conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"] = os.environ.get("STAGEOUT_ACCESS_POINT", None)
         conf["additional_parameters"]["WORKSPACE_DOMAIN"] = os.environ.get("WORKSPACE_DOMAIN", None)
 
         # DEBUG
