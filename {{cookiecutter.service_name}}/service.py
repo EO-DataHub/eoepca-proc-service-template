@@ -79,7 +79,9 @@ class CustomStacIO(DefaultStacIO):
 
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
-        bucket = self.access_point or parsed.netloc
+        bucket = os.environ["STAGEOUT_ACCESS_POINT"] or parsed.netloc
+        logger.info(f"Self access point: {self.access_point}")
+        logger.info(f"Env access point: {os.environ["STAGEOUT_ACCESS_POINT"]}")
         logger.info(f"Reading file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             return (
@@ -94,7 +96,7 @@ class CustomStacIO(DefaultStacIO):
 
     def write_text(self, dest, txt, *args, **kwargs):
         parsed = urlparse(dest)
-        bucket = self.access_point or parsed.netloc
+        bucket = os.environ["STAGEOUT_ACCESS_POINT"] or parsed.netloc
         logger.info(f"Writing file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             self.s3_client.put_object(
@@ -229,6 +231,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["AWS_REGION"] = self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
             os.environ["STAGEOUT_PULSAR_URL"] = self.conf["additional_parameters"]["STAGEOUT_PULSAR_URL"]
             os.environ["WORKSPACE_DOMAIN"] = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
+            os.environ["STAGEOUT_ACCESS_POINT"] = self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"]
 
             CustomStacIO.set_access_point(self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"])
             StacIO.set_default(CustomStacIO)
