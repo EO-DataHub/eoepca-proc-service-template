@@ -229,6 +229,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             os.environ["AWS_REGION"] = self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
             os.environ["STAGEOUT_PULSAR_URL"] = self.conf["additional_parameters"]["STAGEOUT_PULSAR_URL"]
             os.environ["WORKSPACE_DOMAIN"] = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
+            os.environ["STAGEOUT_ACCESS_POINT"] = self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"]
 
             CustomStacIO.set_access_point(self.conf["additional_parameters"]["STAGEOUT_ACCESS_POINT"])
             StacIO.set_default(CustomStacIO)
