@@ -86,12 +86,16 @@ class CustomStacIO(DefaultStacIO):
         logger.info(f"scheme: {parsed.scheme}")
         if parsed.scheme == "s3":
             logger.info("s3 scheme")
+            try:
+                contents = self.s3_client.get_object(Bucket=bucket, Key=parsed.path[1:])["Body"].read().decode("utf-8")
+            except Exception as e:
+                logger.error(f"Error reading from S3: {e}")
+                logger.error(traceback.format_exc())
+                raise
+            logger.info("Successful read from S3")
+            logger.info(f"Contents: {contents}")
             return (
-                self.s3_client.get_object(Bucket=bucket, Key=parsed.path[1:])[
-                    "Body"
-                ]
-                .read()
-                .decode("utf-8")
+                contents
             )
         else:
             return super().read_text(source, *args, **kwargs)
@@ -246,6 +250,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 cat = read_file( s3_path )
             except Exception as e:
                 logger.error(f"Exception: {e}")
+                logger.error(traceback.format_exc())
 
             collection_id = self.conf["additional_parameters"]["collection_id"]
             logger.info(f"Create collection with ID {collection_id}")
