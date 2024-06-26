@@ -80,7 +80,7 @@ class CustomStacIO(DefaultStacIO):
     def read_text(self, source, *args, **kwargs):
         logger.info(f"source: {source}")
         parsed = urlparse(source)
-        bucket = os.environ.get('STAGEOUT_ACCESS_POINT') or parsed.netloc
+        bucket = parsed.netloc
         logger.info(f"Env: {os.environ.get('STAGEOUT_ACCESS_POINT')}")
         logger.info(f"Reading file in bucket {bucket} at location {parsed.path[1:]}")
         logger.info(f"scheme: {parsed.scheme}")
