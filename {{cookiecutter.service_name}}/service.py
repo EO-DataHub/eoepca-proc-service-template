@@ -80,7 +80,7 @@ class CustomStacIO(DefaultStacIO):
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
         bucket = self.access_point or parsed.netloc
-        logger.info(f"Env: {os.environ}")
+        logger.info(f"Env: {os.environ.get("STAGEOUT_ACCESS_POINT")}")
         logger.info(f"Reading file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             return (
