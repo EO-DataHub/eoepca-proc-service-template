@@ -79,9 +79,7 @@ class CustomStacIO(DefaultStacIO):
 
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
-        bucket = os.getenv("STAGEOUT_ACCESS_POINT", parsed.netloc)
-        logger.info(f"Self access point: {self.access_point}")
-        logger.info(f"Env access point: {os.getenv("STAGEOUT_ACCESS_POINT")}")
+        bucket = self.access_point or parsed.netloc
         logger.info(f"Reading file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             return (
@@ -96,7 +94,7 @@ class CustomStacIO(DefaultStacIO):
 
     def write_text(self, dest, txt, *args, **kwargs):
         parsed = urlparse(dest)
-        bucket = os.getenv("STAGEOUT_ACCESS_POINT", parsed.netloc)
+        bucket = self.access_point or parsed.netloc
         logger.info(f"Writing file in bucket {bucket} at location {parsed.path[1:]}")
         if parsed.scheme == "s3":
             self.s3_client.put_object(
