@@ -39,6 +39,9 @@ from pystac.item_collection import ItemCollection
 # For DEBUG
 import traceback
 
+subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
+from kubernetes import client, config
+
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
@@ -447,7 +450,25 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         os.chdir(working_dir)
 
-        runner._namespace_name = "ws-" + inputs.get("workspace", {}).get("value", "default")
+        ## Identify the running namespace for the provided workspace ##
+        
+        # Load kubeconfig
+        config.load_kube_config()
+
+        # Create a CustomObjectsApi client instance
+        custom_api = client.CustomObjectsApi()
+
+        # Access the custom resource
+        workspace = custom_api.get_namespaced_custom_object(
+            group="core.telespazio-uk.io",
+            version="v1alpha1",
+            namespace="workspaces",
+            plural="workspaces",
+            name=inputs.get("workspace", {}).get("value", "default"),
+        )
+
+        #runner._namespace_name = "ws-" + inputs.get("workspace", {}).get("value", "default")
+        runner._namespace_name = workspace["spec"]["namespace"]
 
         exit_status = runner.execute()
 
