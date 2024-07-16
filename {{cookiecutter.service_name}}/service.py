@@ -454,7 +454,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ## Identify the running namespace for the provided workspace ##
 
         # Load kubeconfig
-        config.load_kube_config()
+        config.load_incluster_config()
 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
