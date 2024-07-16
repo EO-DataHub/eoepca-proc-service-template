@@ -22,7 +22,7 @@ dependencies:
   - kubernetes-server
   - pip:
     - git+https://github.com/EOEPCA/zoo-calrissian-runner.git@b495e83
-    - git+https://github.com/UKEODHP/pycalrissian.git@feature/EODHP-293-workflow-access-to-workspace-block-stores
+    - git+https://github.com/UKEODHP/pycalrissian.git@main
     - attrs
     - cwl-utils==0.14
     - kubernetes==28.1.0
