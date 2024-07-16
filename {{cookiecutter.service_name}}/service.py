@@ -35,6 +35,7 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
+import subprocess
 
 # For DEBUG
 import traceback
@@ -451,7 +452,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         os.chdir(working_dir)
 
         ## Identify the running namespace for the provided workspace ##
-        
+
         # Load kubeconfig
         config.load_kube_config()
 
