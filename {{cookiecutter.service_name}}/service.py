@@ -35,23 +35,20 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
+from kubernetes import client, config
 
 
 # For DEBUG
 import traceback
 import subprocess
 
-#subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
-from kubernetes import client, config
+
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-# # Run the pip freeze command
-# result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
-
-# # Print the output
-# print(result.stdout)
+result = subprocess.run(['pip', 'list'], capture_output=True, text=True)
+print(result.stdout)
 
 
 class CustomStacIO(DefaultStacIO):
