@@ -47,11 +47,11 @@ from kubernetes import client, config
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-# Run the pip freeze command
-result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
+# # Run the pip freeze command
+# result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
 
-# Print the output
-print(result.stdout)
+# # Print the output
+# print(result.stdout)
 
 
 class CustomStacIO(DefaultStacIO):
