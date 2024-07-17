@@ -35,11 +35,14 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
-from kubernetes import client, config
+
 
 # For DEBUG
 import traceback
 import subprocess
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
+from kubernetes import client, config
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
