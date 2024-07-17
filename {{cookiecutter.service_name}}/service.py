@@ -35,16 +35,20 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
-import subprocess
+from kubernetes import client, config
 
 # For DEBUG
 import traceback
-
-subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
-from kubernetes import client, config
+import subprocess
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
+
+# Run the pip freeze command
+result = subprocess.run(['pip', 'freeze'], capture_output=True, text=True)
+
+# Print the output
+print(result.stdout)
 
 
 class CustomStacIO(DefaultStacIO):
@@ -460,15 +464,18 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         custom_api = client.CustomObjectsApi()
 
         # Access the custom resource
-        workspace = custom_api.get_namespaced_custom_object(
-            group="core.telespazio-uk.io",
-            version="v1alpha1",
-            namespace="workspaces",
-            plural="workspaces",
-            name=inputs.get("workspace", {}).get("value", "default"),
-        )
+        try:
+            workspace = custom_api.get_namespaced_custom_object(
+                group="core.telespazio-uk.io",
+                version="v1alpha1",
+                namespace="workspaces",
+                plural="workspaces",
+                name=inputs["workspace"]["value"],
+            )
+        except Exception as e:
+            logger.error(f"Error in getting workspace CRD: {e}")
+            raise e
 
-        #runner._namespace_name = "ws-" + inputs.get("workspace", {}).get("value", "default")
         runner._namespace_name = workspace["spec"]["namespace"]
 
         exit_status = runner.execute()
