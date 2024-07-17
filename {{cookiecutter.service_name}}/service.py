@@ -40,15 +40,12 @@ from kubernetes import client, config
 
 # For DEBUG
 import traceback
-import subprocess
 
-
+subprocess.check_call([sys.executable, "-m", "pip", "freeze"])
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-result = subprocess.run(['pip', 'list'], capture_output=True, text=True)
-print(result.stdout)
 
 
 class CustomStacIO(DefaultStacIO):
