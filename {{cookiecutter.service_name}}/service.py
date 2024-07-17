@@ -41,7 +41,7 @@ from pystac.item_collection import ItemCollection
 import traceback
 import subprocess
 
-subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
+#subprocess.check_call([sys.executable, "-m", "pip", "install", "kubernetes"])
 from kubernetes import client, config
 
 logger.remove()
