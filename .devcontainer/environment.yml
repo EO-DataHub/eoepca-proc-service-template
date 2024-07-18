@@ -21,8 +21,8 @@ dependencies:
   - kubernetes-node
   - kubernetes-server
   - pip:
-    - git+https://github.com/UKEODHP/zoo-calrissian-runner.git@main
-    - git+https://github.com/UKEODHP/pycalrissian.git@main
+    - git+https://github.com/UKEODHP/zoo-calrissian-runner.git@feature/EODHP-387-add-workspace-setting-to-pycalrissian
+    - git+https://github.com/UKEODHP/pycalrissian.git@feature/EODHP-387-add-workspace-setting-to-pycalrissian
     - attrs
     - cwl-utils==0.14
     - kubernetes==28.1.0
