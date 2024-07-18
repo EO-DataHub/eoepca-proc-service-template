@@ -41,7 +41,7 @@ from kubernetes import client, config
 # For DEBUG
 import traceback
 
-subprocess.check_call([sys.executable, "-m", "pip", "freeze"])
+# subprocess.check_call([sys.executable, "-m", "pip", "freeze"])
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
