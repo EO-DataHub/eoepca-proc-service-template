@@ -36,12 +36,18 @@ from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
 from kubernetes import client, config
+import subprocess
 
 
 # For DEBUG
 import traceback
 
-# subprocess.check_call([sys.executable, "-m", "pip", "freeze"])
+try:
+    subprocess.check_call([sys.executable, "-m", "pip", "freeze"])
+except subprocess.CalledProcessError as e:
+    print(f"Error executing pip freeze: {e}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
