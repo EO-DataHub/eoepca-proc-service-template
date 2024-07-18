@@ -43,7 +43,8 @@ import subprocess
 import traceback
 
 try:
-    subprocess.check_call([sys.executable, "-m", "pip", "freeze"])
+    result = subprocess.run([sys.executable, "-m", "pip", "freeze"], check=True, text=True, capture_output=True)
+    print(result.stdout)
 except subprocess.CalledProcessError as e:
     print(f"Error executing pip freeze: {e}")
 except Exception as e:
