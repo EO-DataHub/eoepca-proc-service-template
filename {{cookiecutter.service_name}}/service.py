@@ -427,6 +427,32 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ) as stream:
             cwl = yaml.safe_load(stream)
 
+        ## Identify the running namespace for the provided workspace ##
+
+        # Load kubeconfig
+        config.load_incluster_config()
+
+        # Create a CustomObjectsApi client instance
+        custom_api = client.CustomObjectsApi()
+
+        # Access the custom resource
+        try:
+            workspace = custom_api.get_namespaced_custom_object(
+                group="core.telespazio-uk.io",
+                version="v1alpha1",
+                namespace="workspaces",
+                plural="workspaces",
+                name=inputs["workspace"]["value"],
+            )
+        except Exception as e:
+            logger.error(f"Error in getting workspace CRD: {e}")
+            raise e
+
+        service_account = workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        print(f"DEBUG: Service Account: {service_account}")
+        print(f"DEBUG: Spec: {workspace.get('spec', {})}")
+        print(f"DEBUG: conf: {conf}")
+
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
@@ -448,27 +474,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             exist_ok=True,
         )
         os.chdir(working_dir)
-
-        ## Identify the running namespace for the provided workspace ##
-
-        # Load kubeconfig
-        config.load_incluster_config()
-
-        # Create a CustomObjectsApi client instance
-        custom_api = client.CustomObjectsApi()
-
-        # Access the custom resource
-        try:
-            workspace = custom_api.get_namespaced_custom_object(
-                group="core.telespazio-uk.io",
-                version="v1alpha1",
-                namespace="workspaces",
-                plural="workspaces",
-                name=inputs["workspace"]["value"],
-            )
-        except Exception as e:
-            logger.error(f"Error in getting workspace CRD: {e}")
-            raise e
 
         runner._namespace_name = workspace["spec"]["namespace"]
 
