@@ -449,6 +449,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             raise e
 
         service_account = workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = service_account
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
