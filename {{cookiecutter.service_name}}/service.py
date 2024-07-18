@@ -35,12 +35,14 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
+from kubernetes import client, config
 
 # For DEBUG
 import traceback
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
+
 
 
 class CustomStacIO(DefaultStacIO):
@@ -181,6 +183,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
             self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
+            self.conf["additional_parameters"]["STAGEIN_WORKSPACE"] = self.workspace_name
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -307,6 +310,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEIN_AWS_ACCESS_KEY_ID"] = os.environ.get("STAGEIN_AWS_ACCESS_KEY_ID", "minio-admin")
         conf["additional_parameters"]["STAGEIN_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEIN_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
         conf["additional_parameters"]["STAGEIN_AWS_REGION"] = os.environ.get("STAGEIN_AWS_REGION", "RegionOne")
+        conf["additional_parameters"]["STAGEIN_WORKSPACE"] = os.environ.get("STAGEIN_WORKSPACE", "default")
 
         conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"] = os.environ.get("STAGEOUT_AWS_SERVICEURL", "http://s3-service.zoo.svc.cluster.local:9000")
         conf["additional_parameters"]["STAGEOUT_AWS_ACCESS_KEY_ID"] = os.environ.get("STAGEOUT_AWS_ACCESS_KEY_ID", "minio-admin")
@@ -445,7 +449,28 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         os.chdir(working_dir)
 
-        runner._namespace_name = "ws-" + inputs.get("workspace", {}).get("value", "default")
+        ## Identify the running namespace for the provided workspace ##
+
+        # Load kubeconfig
+        config.load_incluster_config()
+
+        # Create a CustomObjectsApi client instance
+        custom_api = client.CustomObjectsApi()
+
+        # Access the custom resource
+        try:
+            workspace = custom_api.get_namespaced_custom_object(
+                group="core.telespazio-uk.io",
+                version="v1alpha1",
+                namespace="workspaces",
+                plural="workspaces",
+                name=inputs["workspace"]["value"],
+            )
+        except Exception as e:
+            logger.error(f"Error in getting workspace CRD: {e}")
+            raise e
+
+        runner._namespace_name = workspace["spec"]["namespace"]
 
         exit_status = runner.execute()
 
