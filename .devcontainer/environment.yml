@@ -21,7 +21,7 @@ dependencies:
   - kubernetes-node
   - kubernetes-server
   - pip:
-    - git+https://github.com/EOEPCA/zoo-calrissian-runner.git@b495e83
+    - git+https://github.com/UKEODHP/zoo-calrissian-runner.git@main
     - git+https://github.com/UKEODHP/pycalrissian.git@main
     - attrs
     - cwl-utils==0.14
