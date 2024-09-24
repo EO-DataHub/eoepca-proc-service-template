@@ -117,7 +117,10 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = True
         else:
             self.use_workspace = False
-        self.workspace_name = self.inputs.get("workspace", {}).get("value", "default")
+
+        # Set executing and calling workspace names
+        self.executing_workspace_name = self.inputs.get("executing_workspace", {}).get("value", "default")
+        self.calling_workspace_name = self.inputs.get("calling_workspace", {}).get("value", "default")
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -182,7 +185,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
-            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
+            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.calling_workspace_name
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -440,7 +443,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
                 version="v1alpha1",
                 namespace="workspaces",
                 plural="workspaces",
-                name=inputs["workspace"]["value"],
+                name=inputs["calling_workspace"]["value"], # extract calling workspace for the workflow
             )
         except Exception as e:
             logger.error(f"Error in getting workspace CRD: {e}")
