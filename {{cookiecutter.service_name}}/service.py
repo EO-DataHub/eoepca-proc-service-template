@@ -436,10 +436,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
 
-        print(inputs)
-        # Access the custom resource
+        # Access the custom resource for the executing workspace
         try:
-            workspace = custom_api.get_namespaced_custom_object(
+            exec_workspace = custom_api.get_namespaced_custom_object(
                 group="core.telespazio-uk.io",
                 version="v1alpha1",
                 namespace="workspaces",
@@ -447,10 +446,29 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
                 name=inputs["executing_workspace"]["value"], # extract calling workspace for the workflow
             )
         except Exception as e:
-            logger.error(f"Error in getting workspace CRD: {e}")
+            logger.error(f"Error in getting executing workspace CRD: {e}")
             raise e
-
-        service_account = workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        
+        if not inputs["executing_workspace"]["value"] == inputs["calling_workspace"]["value"]:
+            # Update the aws role for this workspace to the one of the calling workspace
+            patch = {
+                "spec": {
+                    "aws": {
+                        "roleName": exec_workspace["spec"]["aws"]["roleName"].replace(inputs["executing_workspace"]["value"], inputs["calling_workspace"]["value"])
+                    }
+                }
+            }
+            # Update the manifest
+            updated_workspace = custom_api.patch_namespaced_custom_object(
+                group="core.telespazio-uk.io",
+                version="v1alpha1",
+                namespace="workspaces",
+                plural="workspaces",
+                name=inputs["executing_workspace"]["value"],
+                body=patch
+            )
+        
+        service_account = exec_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = service_account
 
@@ -476,9 +494,28 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         os.chdir(working_dir)
 
-        runner._namespace_name = workspace["spec"]["namespace"]
+        runner._namespace_name = exec_workspace["spec"]["namespace"]
 
         exit_status = runner.execute()
+
+        if not inputs["executing_workspace"]["value"] == inputs["calling_workspace"]["value"]:
+            # Set the aws role back to the one of the executing workspace
+            patch = {
+                "spec": {
+                    "aws": {
+                        "roleName": exec_workspace["spec"]["aws"]["roleName"].replace(inputs["calling_workspace"]["value"], inputs["executing_workspace"]["value"])
+                    }
+                }
+            }
+            # Update the manifest
+            updated_workspace = custom_api.patch_namespaced_custom_object(
+                group="core.telespazio-uk.io",
+                version="v1alpha1",
+                namespace="workspaces",
+                plural="workspaces",
+                name=inputs["executing_workspace"]["value"],
+                body=patch
+            )
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
@@ -488,6 +525,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         else:
             conf["lenv"]["message"] = zoo._("Execution failed")
             return zoo.SERVICE_FAILED
+        
 
     except Exception as e:
         logger.error("ERROR in processing execution template...")
