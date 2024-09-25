@@ -436,6 +436,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
 
+        print(inputs)
         # Access the custom resource
         try:
             workspace = custom_api.get_namespaced_custom_object(
@@ -443,7 +444,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
                 version="v1alpha1",
                 namespace="workspaces",
                 plural="workspaces",
-                name=inputs["calling_workspace"]["value"], # extract calling workspace for the workflow
+                name=inputs["executing_workspace"]["value"], # extract calling workspace for the workflow
             )
         except Exception as e:
             logger.error(f"Error in getting workspace CRD: {e}")
