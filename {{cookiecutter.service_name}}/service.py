@@ -443,30 +443,11 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
                 version="v1alpha1",
                 namespace="workspaces",
                 plural="workspaces",
-                name=inputs["executing_workspace"]["value"], # extract calling workspace for the workflow
+                name=inputs["executing_workspace"]["value"], # extract executing workspace for the workflow
             )
         except Exception as e:
             logger.error(f"Error in getting executing workspace CRD: {e}")
             raise e
-        
-        if not inputs["executing_workspace"]["value"] == inputs["calling_workspace"]["value"]:
-            # Update the aws role for this workspace to the one of the calling workspace
-            patch = {
-                "spec": {
-                    "aws": {
-                        "roleName": exec_workspace["spec"]["aws"]["roleName"].replace(inputs["executing_workspace"]["value"], inputs["calling_workspace"]["value"])
-                    }
-                }
-            }
-            # Update the manifest
-            updated_workspace = custom_api.patch_namespaced_custom_object(
-                group="core.telespazio-uk.io",
-                version="v1alpha1",
-                namespace="workspaces",
-                plural="workspaces",
-                name=inputs["executing_workspace"]["value"],
-                body=patch
-            )
         
         service_account = exec_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
         conf.setdefault("eodhp", {})
@@ -497,25 +478,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         runner._namespace_name = exec_workspace["spec"]["namespace"]
 
         exit_status = runner.execute()
-
-        if not inputs["executing_workspace"]["value"] == inputs["calling_workspace"]["value"]:
-            # Set the aws role back to the one of the executing workspace
-            patch = {
-                "spec": {
-                    "aws": {
-                        "roleName": exec_workspace["spec"]["aws"]["roleName"].replace(inputs["calling_workspace"]["value"], inputs["executing_workspace"]["value"])
-                    }
-                }
-            }
-            # Update the manifest
-            updated_workspace = custom_api.patch_namespaced_custom_object(
-                group="core.telespazio-uk.io",
-                version="v1alpha1",
-                namespace="workspaces",
-                plural="workspaces",
-                name=inputs["executing_workspace"]["value"],
-                body=patch
-            )
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
