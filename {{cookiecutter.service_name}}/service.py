@@ -228,6 +228,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             try:
                 logger.info("Try to get collection from outputs")
                 collection = next(cat.get_all_collections())
+                logger.info(collection)
+                logger.info(collection.links)
                 logger.info("Got collection from outputs")
             except:
                 try:
