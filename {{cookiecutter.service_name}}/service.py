@@ -265,11 +265,11 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             bucket = self.conf["additional_parameters"]["STAGEOUT_OUTPUT"]
             workspace = self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"]
             subfolder = self.conf["additional_parameters"]["process"]
-            logger.info("workspace domain is " + workspace_domain)
             if workspace_domain:
                 for link in collection_dict["links"]:
                     if "href" in link:
-                        link["href"] = link["href"].replace(f"s3://{bucket}/{os.path.join(workspace, subfolder)}", f"https://{workspace}.{workspace_domain}/files/{bucket}/{subfolder}")
+                        link["href"] = link["href"].replace(f"s3://{bucket}/{os.path.join(workspace, subfolder)}", 
+                                                            f"https://{workspace}.{workspace_domain}/files/{bucket}/{subfolder}")
                         logger.info("Updated link href to " + link["href"])
 
             # Set the feature collection to be returned
