@@ -269,7 +269,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             if workspace_domain:
                 for link in collection_dict["links"]:
                     if "href" in link:
-                        link["href"] = link["href"].replace(f"s3://{bucket}/{os.path.join(workspace, subfolder)}", f"https://{workspace}/{workspace_domain}/files/{bucket}/{subfolder}")
+                        link["href"] = link["href"].replace(f"s3://{bucket}/{os.path.join(workspace, subfolder)}", f"https://{workspace}.{workspace_domain}/files/{bucket}/{subfolder}")
                         logger.info("Updated link href to " + link["href"])
 
             # Set the feature collection to be returned
