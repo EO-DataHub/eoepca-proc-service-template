@@ -216,6 +216,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 if s3_path.count("s3://")==0:
                     s3_path = "s3://" + s3_path
                 cat = read_file( s3_path )
+                logger.info(cat)
             except Exception as e:
                 logger.error(f"Exception: {e}")
 
@@ -223,6 +224,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info(f"Create collection with ID {collection_id}")
             collection = None
             try:
+                logger.ingo("Try to get collection from outputs")
                 collection = next(cat.get_all_collections())
                 logger.info("Got collection from outputs")
             except:
