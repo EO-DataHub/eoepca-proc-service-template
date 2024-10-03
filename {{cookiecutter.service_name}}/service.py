@@ -216,17 +216,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 s3_path = output["StacCatalogUri"]
                 if s3_path.count("s3://")==0:
                     s3_path = "s3://" + s3_path
-                #cat = read_file( s3_path )
-                # Construct Resource Catalogue link
-                rc_path = f'https://dev.eodatahub.org.uk/api/catalogue/stac/catalogs/user-datasets/"{self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"]}/{self.conf["additional_parameters"]["process"]}/cat_{self.conf["additional_parameters"]["collection_id"]}'
-                try:
-                    cat = read_file(rc_path)
-                except:
-                    time.sleep(10)
-                    try:
-                        cat = read_file(rc_path)
-                    except:
-                        cat = read_file( s3_path )
+                cat = read_file( s3_path )
                 logger.info(cat)
                 logger.info(cat.links)
             except Exception as e:
