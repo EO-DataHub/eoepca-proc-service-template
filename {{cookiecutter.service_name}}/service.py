@@ -258,7 +258,19 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 return
 
             collection_dict=collection.to_dict()
-            collection_dict["id"]=collection_id
+            collection_dict["id"]=f"col_{collection_id}"
+
+            # Update links with HTTPS links
+            workspace_domain = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
+            bucket = self.conf["additional_parameters"]["STAGEOUT_OUTPUT"]
+            workspace = self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"]
+            subfolder = self.conf["additional_parameters"]["process"]
+            print("workspace domain is " + workspace_domain)
+            if workspace_domain:
+                for link in collection_dict["links"]:
+                    if "href" in link:
+                        link["href"] = link["href"].replace(f"s3://{bucket}/{os.path.join(workspace, subfolder)}", f"https://{workspace}/{workspace_domain}/files/{bucket}/{subfolder}")
+                        print("Updated link href to " + link["href"])
 
             # Set the feature collection to be returned
             self.feature_collection = json.dumps(collection_dict, indent=2)
