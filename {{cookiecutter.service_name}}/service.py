@@ -75,7 +75,17 @@ class CustomStacIO(DefaultStacIO):
 
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
-        if parsed.scheme == "s3":
+        if parsed.path.startswith("/files/") and os.environ.get("WORKSPACE_DOMAIN") in parsed.netloc:
+            # URL is a http path to a workspace file, get directly from s3
+            parts = parsed.path.split("/", 3)
+            return (
+                self.s3_client.get_object(Bucket=parts[2], Key=parts[3])[
+                    "Body"
+                ]
+                .read()
+                .decode("utf-8")
+            )
+        elif parsed.scheme == "s3":
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
                     "Body"
