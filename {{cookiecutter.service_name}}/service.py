@@ -79,7 +79,7 @@ class CustomStacIO(DefaultStacIO):
             # URL is a http path to a workspace file, get directly from s3
             parts = parsed.path.split("/", 3)
             return (
-                self.s3_client.get_object(Bucket=parts[2], Key=parts[3])[
+                self.s3_client.get_object(Bucket=parts[2], Key=f"{parsed.netloc.split('.')[0]}/{parts[3]}")[
                     "Body"
                 ]
                 .read()
@@ -241,7 +241,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 logger.info(collection)
                 logger.info(collection.links)
                 logger.info("Got collection from outputs")
-            except:
+            except Exception as e1:
+                logger.error(f"Exception1: {e1}"+str(e1))
                 try:
                     items=cat.get_all_items()
                     itemFinal=[]
