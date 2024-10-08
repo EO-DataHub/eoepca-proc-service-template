@@ -1,6 +1,5 @@
 # see https://zoo-project.github.io/workshops/2014/first_service.html#f1
 import pathlib
-import time
 
 try:
     import zoo
@@ -226,9 +225,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 s3_path = output["StacCatalogUri"]
                 if s3_path.count("s3://")==0:
                     s3_path = "s3://" + s3_path
-                cat = read_file( s3_path )
-                logger.info(cat)
-                logger.info(cat.links)
+                cat = read_file(s3_path)
             except Exception as e:
                 logger.error(f"Exception: {e}")
 
@@ -236,14 +233,11 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info(f"Create collection with ID {collection_id}")
             collection = None
             try:
-                logger.info("Try to get collection from outputs")
                 collection = next(cat.get_all_collections())
-                logger.info(collection)
-                logger.info(collection.links)
                 logger.info("Got collection from outputs")
-            except Exception as e1:
-                logger.error(f"Exception1: {e1}"+str(e1))
+            except:
                 try:
+                    logger.info("No collection found in outputs, creating from items")
                     items=cat.get_all_items()
                     itemFinal=[]
                     for i in items:
