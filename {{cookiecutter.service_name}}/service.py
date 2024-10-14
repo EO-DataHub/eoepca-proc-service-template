@@ -74,7 +74,17 @@ class CustomStacIO(DefaultStacIO):
 
     def read_text(self, source, *args, **kwargs):
         parsed = urlparse(source)
-        if parsed.scheme == "s3":
+        if parsed.path.startswith("/files/") and os.environ.get("WORKSPACE_DOMAIN") in parsed.netloc:
+            # URL is a http path to a workspace file, get directly from s3
+            parts = parsed.path.split("/", 3)
+            return (
+                self.s3_client.get_object(Bucket=parts[2], Key=f"{parsed.netloc.split('.')[0]}/{parts[3]}")[
+                    "Body"
+                ]
+                .read()
+                .decode("utf-8")
+            )
+        elif parsed.scheme == "s3":
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
                     "Body"
@@ -215,7 +225,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 s3_path = output["StacCatalogUri"]
                 if s3_path.count("s3://")==0:
                     s3_path = "s3://" + s3_path
-                cat = read_file( s3_path )
+                cat = read_file(s3_path)
             except Exception as e:
                 logger.error(f"Exception: {e}")
 
@@ -227,6 +237,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 logger.info("Got collection from outputs")
             except:
                 try:
+                    logger.info("No collection found in outputs, creating from items")
                     items=cat.get_all_items()
                     itemFinal=[]
                     for i in items:
@@ -252,7 +263,19 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 return
 
             collection_dict=collection.to_dict()
-            collection_dict["id"]=collection_id
+            collection_dict["id"]=f"col_{collection_id}"
+
+            # Update links with HTTPS links
+            workspace_domain = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
+            bucket = self.conf["additional_parameters"]["STAGEOUT_OUTPUT"]
+            workspace = self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"]
+            subfolder = self.conf["additional_parameters"]["process"]
+            if workspace_domain:
+                for link in collection_dict["links"]:
+                    if "href" in link:
+                        link["href"] = link["href"].replace(f"s3://{bucket}/{os.path.join(workspace, subfolder)}", 
+                                                            f"https://{workspace}.{workspace_domain}/files/{bucket}/{subfolder}")
+                        logger.info("Updated link href to " + link["href"])
 
             # Set the feature collection to be returned
             self.feature_collection = json.dumps(collection_dict, indent=2)
