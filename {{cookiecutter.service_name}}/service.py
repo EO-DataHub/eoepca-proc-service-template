@@ -346,7 +346,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         # logger.info(f"init_config_defaults: additional_parameters...\n{json.dumps(conf['additional_parameters'], indent=2)}\n")
 
     @staticmethod
-    def get_user_name(decodedJwt) -> str:
+    def get_user_name(decodedJwt):
         for key in ["username", "user_name", "preferred_username"]:
             if key in decodedJwt:
                 return decodedJwt[key]
@@ -407,6 +407,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info("handle_outputs")
 
             # link element to add to the statusInfo
+            self.conf['main']['tmpUrl']=self.conf['main']['tmpUrl'].replace("temp/",self.conf["auth_env"]["user"]+"/temp/")
             servicesLogs = [
                 {
                     "url": os.path.join(self.conf['main']['tmpUrl'],
@@ -510,6 +511,12 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
     except Exception as e:
         logger.error("ERROR in processing execution template...")
+        logger.error("Try fetching logs if any...")
+        try:
+            tool_logs = runner.execution.get_tool_logs()
+            execution_handler.handle_outputs(None, None, None, tool_logs)
+        except Exception as e:
+            logger.error("Fetching logs failed!"+str(e))
         stack = traceback.format_exc()
         logger.error(stack)
         conf["lenv"]["message"] = zoo._(f"Exception during execution...\n{stack}\n")
