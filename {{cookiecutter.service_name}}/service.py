@@ -408,6 +408,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             # link element to add to the statusInfo
             self.conf['main']['tmpUrl']=self.conf['main']['tmpUrl'].replace("temp/",self.conf["auth_env"]["user"]+"/temp/")
+            logger.info(f"tmpUrl: {self.conf['main']['tmpUrl']}")
             servicesLogs = [
                 {
                     "url": os.path.join(self.conf['main']['tmpUrl'],
@@ -418,6 +419,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 }
                 for tool_log in tool_logs
             ]
+            logger.info(f"servicesLogs: {servicesLogs}")
             for i in range(len(servicesLogs)):
                 okeys = ["url", "title", "rel"]
                 keys = ["url", "title", "rel"]
@@ -430,6 +432,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                     self.conf["service_logs"][keys[j]] = servicesLogs[i][okeys[j]]
 
             self.conf["service_logs"]["length"] = str(len(servicesLogs))
+            logger.info(f"service_logs: {self.conf['service_logs']}")
+            logger.info(f"service_logs length: {self.conf['service_logs']['length']}")
 
         except Exception as e:
             logger.error("ERROR in handle_outputs...")
