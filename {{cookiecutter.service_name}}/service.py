@@ -35,14 +35,12 @@ from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
 from pystac.item_collection import ItemCollection
-from kubernetes import client, config
 
 # For DEBUG
 import traceback
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
-
 
 
 class CustomStacIO(DefaultStacIO):
@@ -129,6 +127,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = False
         self.workspace_name = self.inputs.get("workspace", {}).get("value", "default")
 
+        self.username = None
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
 
@@ -145,10 +144,25 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             # logger.info(f"zzz PRE-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
             
             # decode the JWT token to get the user name
+            username_source = None
             if self.ades_rx_token:
                 self.username = self.get_user_name(
                     jwt.decode(self.ades_rx_token, options={"verify_signature": False})
                 )
+                if self.username:
+                    username_source = "JWT"
+
+            # Else get username from Path-Prefix - already parsed into env var
+            if not self.username:
+                self.username = os.getenv("SERVICES_NAMESPACE")
+                if self.username:
+                    username_source = "Path-Prefix"
+
+            # Log username outcome
+            if self.username:
+                logger.info(f"Using username {self.username} from {username_source}")
+            else:
+                logger.warning("Unable to determine username")
 
             if self.use_workspace:
                 logger.info("Lookup storage details in Workspace")
@@ -162,8 +176,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 # Request: Get Workspace Details
                 headers = {
                     "accept": "application/json",
-                    "Authorization": f"Bearer {self.ades_rx_token}",
                 }
+                if self.ades_rx_token:
+                    headers["Authorization"] = f"Bearer {self.ades_rx_token}"
                 get_workspace_details_response = requests.get(workspace_api_endpoint, headers=headers)
 
                 # GOOD response from Workspace API - use the details
@@ -191,7 +206,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["collection_id"] = lenv.get("usid", "")
-            self.conf["additional_parameters"]["process"] = "processing-results"
+            self.conf["additional_parameters"]["process"] = os.path.join("processing-results", self.conf["additional_parameters"]["collection_id"])
             self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
 
         except Exception as e:
@@ -225,7 +240,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 s3_path = output["StacCatalogUri"]
                 if s3_path.count("s3://")==0:
                     s3_path = "s3://" + s3_path
-                cat = read_file(s3_path)
+                cat = read_file( s3_path )
             except Exception as e:
                 logger.error(f"Exception: {e}")
 
@@ -285,8 +300,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 logger.info(f"Register collection in workspace {self.workspace_prefix}-{self.username}")
                 headers = {
                     "Accept": "application/json",
-                    "Authorization": f"Bearer {self.ades_rx_token}",
                 }
+                if self.ades_rx_token:
+                    headers["Authorization"] = f"Bearer {self.ades_rx_token}"
                 api_endpoint = f"{self.workspace_url}/workspaces/{self.workspace_prefix}-{self.username}"
                 r = requests.post(
                     f"{api_endpoint}/register-json",
@@ -346,11 +362,11 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         # logger.info(f"init_config_defaults: additional_parameters...\n{json.dumps(conf['additional_parameters'], indent=2)}\n")
 
     @staticmethod
-    def get_user_name(decodedJwt) -> str:
+    def get_user_name(decodedJwt):
         for key in ["username", "user_name", "preferred_username"]:
             if key in decodedJwt:
                 return decodedJwt[key]
-        return ""
+        return None
 
     @staticmethod
     def local_get_file(fileName):
@@ -407,6 +423,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.info("handle_outputs")
 
             # link element to add to the statusInfo
+            self.conf['main']['tmpUrl']=self.conf['main']['tmpUrl'].replace("temp/",self.conf["auth_env"]["user"]+"/temp/")
             servicesLogs = [
                 {
                     "url": os.path.join(self.conf['main']['tmpUrl'],
@@ -510,6 +527,12 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
     except Exception as e:
         logger.error("ERROR in processing execution template...")
+        logger.error("Try fetching logs if any...")
+        try:
+            tool_logs = runner.execution.get_tool_logs()
+            execution_handler.handle_outputs(None, None, None, tool_logs)
+        except Exception as e:
+            logger.error("Fethcing logs failed!"+str(e))
         stack = traceback.format_exc()
         logger.error(stack)
         conf["lenv"]["message"] = zoo._(f"Exception during execution...\n{stack}\n")
