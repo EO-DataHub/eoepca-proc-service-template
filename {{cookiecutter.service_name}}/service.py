@@ -406,8 +406,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         try:
             logger.info("handle_outputs")
 
-            logger.info("initial url ", self.conf['main']['tmpUrl'])
-
             self.conf['main']['tmpUrl']=self.conf['main']['tmpUrl'].replace("temp/",self.conf["auth_env"]["user"]+"/temp")
 
             servicesLogs = [
@@ -433,8 +431,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                     self.conf["service_logs"][keys[j]] = servicesLogs[i][okeys[j]]
 
             self.conf["service_logs"]["length"] = str(len(servicesLogs))
-            logger.info(f"service_logs: {self.conf['service_logs']}")
-            logger.info(f"service_logs length: {self.conf['service_logs']['length']}")
 
         except Exception as e:
             logger.error("ERROR in handle_outputs...")
