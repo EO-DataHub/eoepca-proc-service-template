@@ -406,17 +406,19 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         try:
             logger.info("handle_outputs")
 
-            # link element to add to the statusInfo
+            self.conf['main']['tmpUrl']=self.conf['main']['tmpUrl'].replace("temp/",self.conf["auth_env"]["user"]+"/temp")
+
             servicesLogs = [
                 {
-                    "url": os.path.join(self.conf['main']['tmpUrl'],
-                                        f"{self.conf['lenv']['Identifier']}-{self.conf['lenv']['usid']}",
-                                        os.path.basename(tool_log)),
+                    "url": f"{self.conf['main']['tmpUrl']}/"
+                            f"{self.conf['lenv']['Identifier']}-{self.conf['lenv']['usid']}/"
+                            f"{os.path.basename(tool_log)}",
                     "title": f"Tool log {os.path.basename(tool_log)}",
                     "rel": "related",
                 }
                 for tool_log in tool_logs
             ]
+            logger.info(f"servicesLogs: {servicesLogs}")
             for i in range(len(servicesLogs)):
                 okeys = ["url", "title", "rel"]
                 keys = ["url", "title", "rel"]
@@ -510,6 +512,12 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
     except Exception as e:
         logger.error("ERROR in processing execution template...")
+        logger.info("Try fetching logs if any...")
+        try:
+            tool_logs = runner.execution.get_tool_logs()
+            execution_handler.handle_outputs(None, None, None, tool_logs)
+        except Exception as e:
+            logger.error("Fetching logs failed!"+str(e))
         stack = traceback.format_exc()
         logger.error(stack)
         conf["lenv"]["message"] = zoo._(f"Exception during execution...\n{stack}\n")
