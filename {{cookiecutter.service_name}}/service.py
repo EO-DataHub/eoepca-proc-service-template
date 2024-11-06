@@ -458,23 +458,59 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
+        
+        # Extract workspace names
+        calling_workspace_name = inputs["calling_workspace"]["value"]
+        executing_workspace_name = inputs["executing_workspace"]["value"]
 
-        # Access the custom resource
+        # Access the custom resource for the calling workspace
         try:
-            workspace = custom_api.get_namespaced_custom_object(
+            calling_workspace = custom_api.get_namespaced_custom_object(
                 group="core.telespazio-uk.io",
                 version="v1alpha1",
                 namespace="workspaces",
                 plural="workspaces",
-                name=inputs["workspace"]["value"],
+                name=calling_workspace_name,
             )
         except Exception as e:
             logger.error(f"Error in getting workspace CRD: {e}")
             raise e
+        
+        # Set the service account for calling workspace
+        calling_service_account  = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        
+        if calling_workspace_name == executing_workspace_name:
+            executing_service_account = calling_service_account
+        else:
+            # Access the custom resource for the executing workspace
+            try:
+                executing_workspace = custom_api.get_namespaced_custom_object(
+                    group="core.telespazio-uk.io",
+                    version="v1alpha1",
+                    namespace="workspaces",
+                    plural="workspaces",
+                    name=executing_workspace_name,
+                )
+            except Exception as e:
+                logger.error(f"Error in getting workspace CRD: {e}")
+                raise e
+            executing_service_account = executing_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        
 
-        service_account = workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        # Combine service accounts to allow required access
+        # combined_roles = set()
+        # executing_roles = get_roles_for_service_account(executing_service_account)
+        # calling_roles = get_roles_for_service_account(calling_service_account)
+        # combined_roles.update(executing_roles)
+        # combined_roles.update(calling_roles)
+
+        # Here we need to make sure the correct service account is used
+        # Currently set to the executing one, but we will need access to the calling user workspace for inputs and outputs if this is a user service
+        # So need to chain roles together to allow access to both the executing and calling workspace
+
+
         conf.setdefault("eodhp", {})
-        conf["eodhp"]["serviceAccountName"] = service_account
+        conf["eodhp"]["serviceAccountName"] = executing_service_account
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
