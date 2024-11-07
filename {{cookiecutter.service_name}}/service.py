@@ -522,6 +522,13 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             WebIdentityToken=token,
         )
         creds = role["Credentials"]
+        import os 
+        directory = "/credentials"
+        dir_permission = oct(os.stat(directory).st_mode)[-3:]
+        user_id = os.getuid()
+        group_id = os.getgid()
+
+        raise Exception("dir permission %s user_id %s and group id %s" % (dir_permission, user_id, group_id))
 
         with open("/credentials/test-file.txt", "w") as f:
             f.write("test")
