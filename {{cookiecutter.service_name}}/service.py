@@ -477,7 +477,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             raise e
         
         # Set the service account for calling workspace
-        calling_service_account  = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        calling_service_account = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
         
         if calling_workspace_name == executing_workspace_name:
             executing_service_account = calling_service_account
