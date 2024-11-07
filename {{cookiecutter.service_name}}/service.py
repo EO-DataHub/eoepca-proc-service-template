@@ -528,10 +528,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         user_id = os.getuid()
         group_id = os.getgid()
 
-        print(f"Directory {directory} has permissions {dir_permission} and user_id {user_id} and group_id {group_id}")
+        logger.info(f"Directory {directory} has permissions {dir_permission} and user_id {user_id} and group_id {group_id}")
 
         pod_name = os.getenv('HOSTNAME')
-        print(f"Current pod name: {pod_name}")
+        logger.info(f"Current pod name: {pod_name}")
 
         with open("/credentials/test-file.txt", "w") as f:
             f.write("test")
