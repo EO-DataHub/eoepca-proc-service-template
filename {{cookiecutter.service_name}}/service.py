@@ -523,6 +523,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         creds = role["Credentials"]
 
+        with open("/credentials/test-file.txt", "w") as f:
+            f.write("test")
+
         # Write these creds to the mounted credentials volume
         with open("/credentials/aws_access_key_id", "w") as f:
             f.write(creds["AccessKeyId"])
