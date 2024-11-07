@@ -456,48 +456,48 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         ## Identify the running namespace for the provided workspace ##
 
-        # Load kubeconfig
-        config.load_incluster_config()
+        # # Load kubeconfig
+        # config.load_incluster_config()
 
-        # Create a CustomObjectsApi client instance
-        custom_api = client.CustomObjectsApi()
+        # # Create a CustomObjectsApi client instance
+        # custom_api = client.CustomObjectsApi()
         
-        # Extract workspace names
-        calling_workspace_name = inputs["calling_workspace"]["value"]
-        executing_workspace_name = inputs["executing_workspace"]["value"]
+        # # Extract workspace names
+        # calling_workspace_name = inputs["calling_workspace"]["value"]
+        # executing_workspace_name = inputs["executing_workspace"]["value"]
 
-        # Access the custom resource for the calling workspace
-        try:
-            calling_workspace = custom_api.get_namespaced_custom_object(
-                group="core.telespazio-uk.io",
-                version="v1alpha1",
-                namespace="workspaces",
-                plural="workspaces",
-                name=calling_workspace_name,
-            )
-        except Exception as e:
-            logger.error(f"Error in getting workspace CRD: {e}")
-            raise e
+        # # Access the custom resource for the calling workspace
+        # try:
+        #     calling_workspace = custom_api.get_namespaced_custom_object(
+        #         group="core.telespazio-uk.io",
+        #         version="v1alpha1",
+        #         namespace="workspaces",
+        #         plural="workspaces",
+        #         name=calling_workspace_name,
+        #     )
+        # except Exception as e:
+        #     logger.error(f"Error in getting workspace CRD: {e}")
+        #     raise e
         
-        # Set the service account for calling workspace
-        calling_service_account = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        # # Set the service account for calling workspace
+        # calling_service_account = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
         
-        if calling_workspace_name == executing_workspace_name:
-            executing_service_account = calling_service_account
-        else:
-            # Access the custom resource for the executing workspace
-            try:
-                executing_workspace = custom_api.get_namespaced_custom_object(
-                    group="core.telespazio-uk.io",
-                    version="v1alpha1",
-                    namespace="workspaces",
-                    plural="workspaces",
-                    name=executing_workspace_name,
-                )
-            except Exception as e:
-                logger.error(f"Error in getting workspace CRD: {e}")
-                raise e
-            executing_service_account = executing_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+        # if calling_workspace_name == executing_workspace_name:
+        #     executing_service_account = calling_service_account
+        # else:
+        #     # Access the custom resource for the executing workspace
+        #     try:
+        #         executing_workspace = custom_api.get_namespaced_custom_object(
+        #             group="core.telespazio-uk.io",
+        #             version="v1alpha1",
+        #             namespace="workspaces",
+        #             plural="workspaces",
+        #             name=executing_workspace_name,
+        #         )
+        #     except Exception as e:
+        #         logger.error(f"Error in getting workspace CRD: {e}")
+        #         raise e
+        #     executing_service_account = executing_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
         
 
         # Combine service accounts to allow required access
@@ -531,7 +531,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
 
         # Need to mount these creds in subsequent step pods
-
 
 
         conf.setdefault("eodhp", {})
