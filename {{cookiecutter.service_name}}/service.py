@@ -34,6 +34,7 @@ from pystac import read_file
 from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
+import boto3
 from pystac.item_collection import ItemCollection
 from kubernetes import client, config
 
@@ -42,6 +43,10 @@ import traceback
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
+
+# Create boto3 sts client
+sts_client = boto3.client("sts")
+role_arn = os.environ.get("AWS_ROLE_ARN")
 
 
 
@@ -507,6 +512,28 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Here we need to make sure the correct service account is used
         # Currently set to the executing one, but we will need access to the calling user workspace for inputs and outputs if this is a user service
         # So need to chain roles together to allow access to both the executing and calling workspace
+
+        # Assign role to subsequent execution pods
+        token = inputs["user_token"]["value"]
+
+        # Request AWS credentials for executing pods
+        username = executing_workspace_name
+        role = sts_client.assume_role_with_web_identity(
+            RoleArn=role_arn,
+            RoleSessionName=f"{username}-session",
+            WebIdentityToken=token,
+        )
+        creds = role["Credentials"]
+
+        # Write these creds to the mounted credentials volume
+        with open("/credentials/aws_access_key_id", "w") as f:
+            f.write(creds["AccessKeyId"])
+        with open("/credentials/aws_secret_access_key", "w") as f:
+            f.write(creds["SecretAccessKey"])
+
+
+        # Need to mount these creds in subsequent step pods
+
 
 
         conf.setdefault("eodhp", {})
