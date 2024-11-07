@@ -525,29 +525,22 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         creds = role["Credentials"]
 
-        directory = "/credentials"
-        dir_permission = oct(os.stat(directory).st_mode)[-3:]
-        user_id = os.getuid()
-        group_id = os.getgid()
-
-        logger.info(f"Directory {directory} has permissions {dir_permission} and user_id {user_id} and group_id {group_id}")
-
-        pod_name = os.getenv('HOSTNAME')
-        logger.info(f"Current pod name: {pod_name}")
-
-        with open("/credentials/test-file.txt", "w") as f:
-            f.write("test")
-
         # Write these creds to the mounted credentials volume
         with open("/credentials/aws_access_key_id", "w") as f:
             f.write(creds["AccessKeyId"])
         with open("/credentials/aws_secret_access_key", "w") as f:
             f.write(creds["SecretAccessKey"])
 
+        # Check token allos s3 access
+        logger.info("Access credentials are in %s", os.environ.get("AWS_SHARED_CREDENTIALS_FILE"))
+        s3_client = boto3.client("s3")
+        try:
+            s3_client.list_buckets()
+        except Exception as e:
+            logger.error(f"Error in s3 access: {e}")
 
-        # Need to mount these creds in subsequent step pods
 
-
+        # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
 
