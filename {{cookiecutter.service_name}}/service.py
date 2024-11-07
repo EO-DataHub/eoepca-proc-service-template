@@ -526,12 +526,12 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         creds = role["Credentials"]
 
         # Write these creds to the mounted credentials volume
-        with open("/credentials/aws_access_key_id", "w") as f:
-            f.write(creds["AccessKeyId"])
-        with open("/credentials/aws_secret_access_key", "w") as f:
-            f.write(creds["SecretAccessKey"])
+        with open("/credentials/credentials", "w") as f:
+            f.write("[default]\n")
+            f.write(f"aws_access_key_id = {creds['AccessKeyId']}\n")
+            f.write(f"aws_secret_access_key = {creds['SecretAccessKey']}\n")
 
-        # Check token allos s3 access
+        # Check token allows s3 access
         logger.info("Access credentials are in %s", os.environ.get("AWS_SHARED_CREDENTIALS_FILE"))
         s3_client = boto3.client("s3")
         try:
