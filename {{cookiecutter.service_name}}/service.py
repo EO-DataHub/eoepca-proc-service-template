@@ -48,8 +48,6 @@ logger.add(sys.stderr, level="INFO")
 sts_client = boto3.client("sts")
 role_arn = os.environ.get("AWS_ROLE_ARN")
 
-
-
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
 
@@ -518,6 +516,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Request AWS credentials for executing pods
         username = executing_workspace_name
+        raise Exception("The role is %s the token is %s" % (role_arn, token))
         role = sts_client.assume_role_with_web_identity(
             RoleArn=role_arn,
             RoleSessionName=f"{username}-session",
