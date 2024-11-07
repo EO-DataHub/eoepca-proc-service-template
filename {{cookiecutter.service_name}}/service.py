@@ -522,7 +522,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             WebIdentityToken=token,
         )
         creds = role["Credentials"]
-        import os 
+
         directory = "/credentials"
         dir_permission = oct(os.stat(directory).st_mode)[-3:]
         user_id = os.getuid()
