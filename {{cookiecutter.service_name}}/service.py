@@ -462,9 +462,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # # Create a CustomObjectsApi client instance
         # custom_api = client.CustomObjectsApi()
         
-        # # Extract workspace names
-        # calling_workspace_name = inputs["calling_workspace"]["value"]
-        # executing_workspace_name = inputs["executing_workspace"]["value"]
+        # Extract workspace names
+        calling_workspace_name = inputs["calling_workspace"]["value"]
+        executing_workspace_name = inputs["executing_workspace"]["value"]
 
         # # Access the custom resource for the calling workspace
         # try:
@@ -534,7 +534,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
 
         conf.setdefault("eodhp", {})
-        conf["eodhp"]["serviceAccountName"] = executing_service_account
+        conf["eodhp"]["serviceAccountName"] = "default"
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
