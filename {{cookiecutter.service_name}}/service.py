@@ -514,30 +514,30 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # So need to chain roles together to allow access to both the executing and calling workspace
 
         # Assign role to subsequent execution pods
-        token = inputs["user_token"]["value"]
+        # token = inputs["user_token"]["value"]
 
-        # Request AWS credentials for executing pods
-        username = executing_workspace_name
-        role = sts_client.assume_role_with_web_identity(
-            RoleArn=role_arn,
-            RoleSessionName=f"{username}-session",
-            WebIdentityToken=token,
-        )
-        creds = role["Credentials"]
+        # # Request AWS credentials for executing pods
+        # username = executing_workspace_name
+        # role = sts_client.assume_role_with_web_identity(
+        #     RoleArn=role_arn,
+        #     RoleSessionName=f"{username}-session",
+        #     WebIdentityToken=token,
+        # )
+        # creds = role["Credentials"]
 
-        # Write these creds to the mounted credentials volume
-        with open("/aws-credentials/credentials", "w") as f:
-            f.write("[default]\n")
-            f.write(f"aws_access_key_id = {creds['AccessKeyId']}\n")
-            f.write(f"aws_secret_access_key = {creds['SecretAccessKey']}\n")
+        # # Write these creds to the mounted credentials volume
+        # with open("/aws-credentials/credentials", "w") as f:
+        #     f.write("[default]\n")
+        #     f.write(f"aws_access_key_id = {creds['AccessKeyId']}\n")
+        #     f.write(f"aws_secret_access_key = {creds['SecretAccessKey']}\n")
 
-        # Check token allows s3 access
-        logger.info("Access credentials are in %s", os.environ.get("AWS_SHARED_CREDENTIALS_FILE"))
-        s3_client = boto3.client("s3")
-        try:
-            s3_client.list_buckets()
-        except Exception as e:
-            logger.error(f"Error in s3 access: {e}")
+        # # Check token allows s3 access
+        # logger.info(f"Access credentials are in {os.environ.get('AWS_SHARED_CREDENTIALS_FILE')}")
+        # s3_client = boto3.client("s3")
+        # try:
+        #     s3_client.list_buckets()
+        # except Exception as e:
+        #     logger.error(f"Error in s3 access: {e}")
 
 
         # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
