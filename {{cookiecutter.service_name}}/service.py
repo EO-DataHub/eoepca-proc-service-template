@@ -197,6 +197,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.conf["additional_parameters"]["process"] = "processing-results"
             self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
             self.conf["additional_parameters"]["workflow_id"] = "{{cookiecutter.workflow_id}}"
+            self.conf["additional_parameters"]["token"] = self.inputs.get("user_token", {}).get("value", "")
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
