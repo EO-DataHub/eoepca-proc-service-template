@@ -346,6 +346,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
         conf["additional_parameters"]["CALLING_WORKSPACE"] = os.environ.get("CALLING_WORKSPACE", "default")
+        conf["additional_parameters"]["EXECUTING_WORKSPACE"] = os.environ.get("EXECUTING_WORKSPACE", "default")
         conf["additional_parameters"]["STAGEOUT_PULSAR_URL"] = os.environ.get("STAGEOUT_PULSAR_URL", None)
         conf["additional_parameters"]["WORKSPACE_DOMAIN"] = os.environ.get("WORKSPACE_DOMAIN", None)
 
