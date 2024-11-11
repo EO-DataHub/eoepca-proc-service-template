@@ -130,7 +130,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = True
         else:
             self.use_workspace = False
-        self.workspace_name = self.inputs.get("calling_workspace", {}).get("value", "default")
+        self.calling_workspace_name = self.inputs.get("calling_workspace", {}).get("value", "default")
+        self.executing_worspace_name = self.inputs.get("executing_workspace", {}).get("value", "default")
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -195,7 +196,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
-            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
+            self.conf["additional_parameters"]["CALLING_WORKSPACE"] = self.calling_workspace_name
+            self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_worspace_name
             self.conf["additional_parameters"]["workflow_id"] = "{{cookiecutter.workflow_id}}"
             self.conf["additional_parameters"]["token"] = self.inputs.get("user_token", {}).get("value", "")
 
@@ -273,7 +275,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             # Update links with HTTPS links
             workspace_domain = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
             bucket = self.conf["additional_parameters"]["STAGEOUT_OUTPUT"]
-            workspace = self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"]
+            workspace = self.conf["additional_parameters"]["CALLING_WORKSPACE"]
             subfolder = self.conf["additional_parameters"]["process"]
             if workspace_domain:
                 for link in collection_dict["links"]:
@@ -343,7 +345,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEOUT_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
-        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "default")
+        conf["additional_parameters"]["CALLING_WORKSPACE"] = os.environ.get("CALLING_WORKSPACE", "default")
         conf["additional_parameters"]["STAGEOUT_PULSAR_URL"] = os.environ.get("STAGEOUT_PULSAR_URL", None)
         conf["additional_parameters"]["WORKSPACE_DOMAIN"] = os.environ.get("WORKSPACE_DOMAIN", None)
 
