@@ -88,10 +88,10 @@ class CustomStacIO(DefaultStacIO):
                 .decode("utf-8")
             )
         elif parsed.scheme == "s3":
-            print("Bucket is: ", parsed.netloc)
-            print("Key is: ", parsed.path[1:])
+            logger.info("Bucket is: ", parsed.netloc)
+            logger.info("Key is: ", parsed.path[1:])
             pod_name = os.getenv('HOSTNAME')
-            print(f"Current pod name: {pod_name}")
+            logger.info(f"Current pod name: {pod_name}")
 
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
