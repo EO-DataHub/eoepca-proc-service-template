@@ -98,9 +98,16 @@ class CustomStacIO(DefaultStacIO):
             try:
                 with open('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'r') as f:
                     service_account = f.read().strip()
-                    logger.info(f"Service account: {service_account}")
+                    logger.info(f"namespace: {service_account}")
             except FileNotFoundError:
-                logger.error("Service account file not found")
+                logger.error("namespace file not found")
+
+            try:
+                with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as f:
+                    service_account_token = f.read().strip()
+                    logger.info(f"Service account token: {service_account_token}")
+            except FileNotFoundError:
+                logger.error("Service account token file not found")
 
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
