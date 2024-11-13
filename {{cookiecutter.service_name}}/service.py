@@ -88,10 +88,19 @@ class CustomStacIO(DefaultStacIO):
                 .decode("utf-8")
             )
         elif parsed.scheme == "s3":
-            logger.info("Bucket is: ", parsed.netloc)
-            logger.info("Key is: ", parsed.path[1:])
+            logger.info("Bucket is:")
+            logger.info(parsed.netloc)
+            logger.info("Key is: %s")
+            logger.info(parsed.path[1:])
             pod_name = os.getenv('HOSTNAME')
             logger.info(f"Current pod name: {pod_name}")
+
+            try:
+                with open('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'r') as f:
+                    service_account = f.read().strip()
+                    logger.info(f"Service account: {service_account}")
+            except FileNotFoundError:
+                logger.error("Service account file not found")
 
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
