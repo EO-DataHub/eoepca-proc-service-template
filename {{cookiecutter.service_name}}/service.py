@@ -178,10 +178,13 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
                     storage_credentials = workspace_response["storage"]["credentials"]
 
-                    self.conf["additional_parameters"]["AWS_SERVICEURL"] = storage_credentials.get("endpoint")
+                    self.conf["additional_parameters"]["STAGEIN_AWS_SERVICEURL"] = storage_credentials.get("endpoint")
+                    self.conf["additional_parameters"]["STAGEIN_AWS_REGION"] = storage_credentials.get("region")
+
+                    self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"] = storage_credentials.get("endpoint")
                     self.conf["additional_parameters"]["STAGEOUT_AWS_ACCESS_KEY_ID"] = storage_credentials.get("access")
                     self.conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = storage_credentials.get("secret")
-                    self.conf["additional_parameters"]["AWS_REGION"] = storage_credentials.get("region")
+                    self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = storage_credentials.get("region")
                     self.conf["additional_parameters"]["STAGEOUT_OUTPUT"] = storage_credentials.get("bucketname")
                 # BAD response from Workspace API - fallback to the 'pre-configured storage details'
                 else:
@@ -218,10 +221,10 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             # logger.info(f"zzz POST-HOOK - config...\n{json.dumps(self.conf, indent=2)}\n")
 
             logger.info("Set user bucket settings")
-            os.environ["AWS_S3_ENDPOINT"] = self.conf["additional_parameters"]["AWS_SERVICEURL"]
+            os.environ["AWS_S3_ENDPOINT"] = self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
             os.environ["AWS_ACCESS_KEY_ID"] = self.conf["additional_parameters"]["STAGEOUT_AWS_ACCESS_KEY_ID"]
             os.environ["AWS_SECRET_ACCESS_KEY"] = self.conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"]
-            os.environ["AWS_REGION"] = self.conf["additional_parameters"]["AWS_REGION"]
+            os.environ["AWS_REGION"] = self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
             os.environ["STAGEOUT_PULSAR_URL"] = self.conf["additional_parameters"]["STAGEOUT_PULSAR_URL"]
             os.environ["WORKSPACE_DOMAIN"] = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
 
@@ -253,8 +256,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                             cDict["storage:platform"]="EOEPCA"
                             cDict["storage:requester_pays"]=False
                             cDict["storage:tier"]="Standard"
-                            cDict["storage:region"]=self.conf["additional_parameters"]["AWS_REGION"]
-                            cDict["storage:endpoint"]=self.conf["additional_parameters"]["AWS_SERVICEURL"]
+                            cDict["storage:region"]=self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
+                            cDict["storage:endpoint"]=self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
                             i.assets[a]=i.assets[a].from_dict(cDict)
                         i.collection_id=f"col_{job_id}"
                         itemFinal+=[i.clone()]
@@ -335,15 +338,15 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         if "additional_parameters" not in conf:
             conf["additional_parameters"] = {}
 
-        conf["additional_parameters"]["AWS_SERVICEURL"] = os.environ.get("AWS_SERVICEURL", "http://s3-service.zoo.svc.cluster.local:9000")
+        conf["additional_parameters"]["STAGEIN_AWS_SERVICEURL"] = os.environ.get("STAGEIN_AWS_SERVICEURL", "http://s3-service.zoo.svc.cluster.local:9000")
         conf["additional_parameters"]["STAGEIN_AWS_ACCESS_KEY_ID"] = os.environ.get("STAGEIN_AWS_ACCESS_KEY_ID", "minio-admin")
         conf["additional_parameters"]["STAGEIN_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEIN_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
-        conf["additional_parameters"]["AWS_REGION"] = os.environ.get("AWS_REGION", "RegionOne")
+        conf["additional_parameters"]["STAGEIN_AWS_REGION"] = os.environ.get("STAGEIN_AWS_REGION", "RegionOne")
 
-        conf["additional_parameters"]["AWS_SERVICEURL"] = os.environ.get("AWS_SERVICEURL", "http://s3-service.zoo.svc.cluster.local:9000")
+        conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"] = os.environ.get("STAGEOUT_AWS_SERVICEURL", "http://s3-service.zoo.svc.cluster.local:9000")
         conf["additional_parameters"]["STAGEOUT_AWS_ACCESS_KEY_ID"] = os.environ.get("STAGEOUT_AWS_ACCESS_KEY_ID", "minio-admin")
         conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEOUT_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
-        conf["additional_parameters"]["AWS_REGION"] = os.environ.get("AWS_REGION", "RegionOne")
+        conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
         conf["additional_parameters"]["CALLING_WORKSPACE"] = os.environ.get("CALLING_WORKSPACE", "default")
         conf["additional_parameters"]["EXECUTING_WORKSPACE"] = os.environ.get("EXECUTING_WORKSPACE", "default")
