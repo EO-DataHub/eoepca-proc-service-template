@@ -489,9 +489,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Set the service account for calling workspace
         calling_service_account = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
 
-        # Set calling namespace to allow PVC to be mounted
-        inputs.update({"calling_namespace": {"value": calling_workspace["spec"]["namespace"]}})
-
         if calling_workspace_name == executing_workspace_name:
             executing_service_account = calling_service_account
             executing_namespace = calling_workspace["spec"]["namespace"]
