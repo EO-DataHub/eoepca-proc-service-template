@@ -508,7 +508,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         if calling_workspace_name == executing_workspace_name:
             executing_namespace = calling_workspace["spec"]["namespace"]
-            #inputs.update({"calling_workspace": {"value": None}}) # no longer needed as same as executing
+            inputs.update({"calling_workspace": {"value": ""}}) # no longer needed as same as executing
         else:
             # Access the custom resource for the executing workspace
             try:
