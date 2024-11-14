@@ -507,7 +507,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         calling_service_account = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
 
         if calling_workspace_name == executing_workspace_name:
-            executing_service_account = calling_service_account
             executing_namespace = calling_workspace["spec"]["namespace"]
             inputs.update({"calling_workspace": {"value": None}}) # no longer needed as same as executing
         else:
@@ -523,7 +522,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             except Exception as e:
                 logger.error(f"Error in getting workspace CRD: {e}")
                 raise e
-            executing_service_account = executing_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
             executing_namespace = executing_workspace["spec"]["namespace"]
         
 
