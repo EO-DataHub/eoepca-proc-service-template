@@ -44,10 +44,6 @@ import traceback
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-# Create boto3 sts client
-sts_client = boto3.client("sts")
-role_arn = os.environ.get("AWS_ROLE_ARN")
-
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
 
