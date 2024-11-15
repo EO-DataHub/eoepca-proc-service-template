@@ -490,10 +490,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         calling_workspace_name = inputs["calling_workspace"]["value"]
         executing_workspace_name = inputs["executing_workspace"]["value"]
 
-        logger.info("inputs")
-        logger.info(inputs)
-        logger.info(conf["lenv"]["usid"])
-
         # Access the custom resource for the calling workspace
         try:
             calling_workspace = custom_api.get_namespaced_custom_object(
