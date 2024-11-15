@@ -490,6 +490,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         calling_workspace_name = inputs["calling_workspace"]["value"]
         executing_workspace_name = inputs["executing_workspace"]["value"]
 
+        logger.info("inputs")
+
         # Access the custom resource for the calling workspace
         try:
             calling_workspace = custom_api.get_namespaced_custom_object(
@@ -565,9 +567,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
-
-        # Set UUID to use for aws-credentials
-        logger.info(f"Setting UUID to {conf["lenv"]["usid"]}")
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
