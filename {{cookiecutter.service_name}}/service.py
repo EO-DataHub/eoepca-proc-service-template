@@ -492,6 +492,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         logger.info("inputs")
         logger.info(inputs)
+        logger.info(conf)
 
         # Access the custom resource for the calling workspace
         try:
