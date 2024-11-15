@@ -566,6 +566,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
 
+        # Set UUID to use for aws-credentials
+        logger.info(f"Setting UUID to {conf["lenv"]["usid"]}")
+
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
