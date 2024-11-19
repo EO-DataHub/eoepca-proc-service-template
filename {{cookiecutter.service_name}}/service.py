@@ -84,10 +84,6 @@ class CustomStacIO(DefaultStacIO):
                 .decode("utf-8")
             )
         elif parsed.scheme == "s3":
-            logger.info("Bucket is:")
-            logger.info(parsed.netloc)
-            logger.info("Key is: %s")
-            logger.info(parsed.path[1:])
             pod_name = os.getenv('HOSTNAME')
             logger.info(f"Current pod name: {pod_name}")
 
@@ -522,44 +518,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
                 logger.error(f"Error in getting workspace CRD: {e}")
                 raise e
             executing_namespace = executing_workspace["spec"]["namespace"]
-        
-
-        # Combine service accounts to allow required access
-        # combined_roles = set()
-        # executing_roles = get_roles_for_service_account(executing_service_account)
-        # calling_roles = get_roles_for_service_account(calling_service_account)
-        # combined_roles.update(executing_roles)
-        # combined_roles.update(calling_roles)
-
-        # Here we need to make sure the correct service account is used
-        # Currently set to the executing one, but we will need access to the calling user workspace for inputs and outputs if this is a user service
-        # So need to chain roles together to allow access to both the executing and calling workspace
-
-        # Assign role to subsequent execution pods
-        # token = inputs["user_token"]["value"]
-
-        # # Request AWS credentials for executing pods
-        # username = executing_workspace_name
-        # role = sts_client.assume_role_with_web_identity(
-        #     RoleArn=role_arn,
-        #     RoleSessionName=f"{username}-session",
-        #     WebIdentityToken=token,
-        # )
-        # creds = role["Credentials"]
-
-        # # Write these creds to the mounted credentials volume
-        # with open("/aws-credentials/credentials", "w") as f:
-        #     f.write("[default]\n")
-        #     f.write(f"aws_access_key_id = {creds['AccessKeyId']}\n")
-        #     f.write(f"aws_secret_access_key = {creds['SecretAccessKey']}\n")
-
-        # # Check token allows s3 access
-        # logger.info(f"Access credentials are in {os.environ.get('AWS_SHARED_CREDENTIALS_FILE')}")
-        # s3_client = boto3.client("s3")
-        # try:
-        #     s3_client.list_buckets()
-        # except Exception as e:
-        #     logger.error(f"Error in s3 access: {e}")
 
 
         # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
