@@ -34,7 +34,6 @@ from pystac import read_file
 from pystac.stac_io import DefaultStacIO, StacIO
 from zoo_calrissian_runner import ExecutionHandler, ZooCalrissianRunner
 from botocore.client import Config
-import boto3
 from pystac.item_collection import ItemCollection
 from kubernetes import client, config
 
@@ -86,20 +85,6 @@ class CustomStacIO(DefaultStacIO):
         elif parsed.scheme == "s3":
             pod_name = os.getenv('HOSTNAME')
             logger.info(f"Current pod name: {pod_name}")
-
-            try:
-                with open('/var/run/secrets/kubernetes.io/serviceaccount/namespace', 'r') as f:
-                    service_account = f.read().strip()
-                    logger.info(f"namespace: {service_account}")
-            except FileNotFoundError:
-                logger.error("namespace file not found")
-
-            try:
-                with open('/var/run/secrets/kubernetes.io/serviceaccount/token', 'r') as f:
-                    service_account_token = f.read().strip()
-                    logger.info(f"Service account token: {service_account_token}")
-            except FileNotFoundError:
-                logger.error("Service account token file not found")
 
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
@@ -486,38 +471,19 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         calling_workspace_name = inputs["calling_workspace"]["value"]
         executing_workspace_name = inputs["executing_workspace"]["value"]
 
-        # Access the custom resource for the calling workspace
+        # Access workspace details for the executing workspace
         try:
-            calling_workspace = custom_api.get_namespaced_custom_object(
+            executing_workspace = custom_api.get_namespaced_custom_object(
                 group="core.telespazio-uk.io",
                 version="v1alpha1",
                 namespace="workspaces",
                 plural="workspaces",
-                name=calling_workspace_name,
+                name=executing_workspace_name,
             )
         except Exception as e:
             logger.error(f"Error in getting workspace CRD: {e}")
             raise e
-        
-        # Set the service account for calling workspace
-        calling_service_account = calling_workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
-
-        if calling_workspace_name == executing_workspace_name:
-            executing_namespace = calling_workspace["spec"]["namespace"]
-        else:
-            # Access the custom resource for the executing workspace
-            try:
-                executing_workspace = custom_api.get_namespaced_custom_object(
-                    group="core.telespazio-uk.io",
-                    version="v1alpha1",
-                    namespace="workspaces",
-                    plural="workspaces",
-                    name=executing_workspace_name,
-                )
-            except Exception as e:
-                logger.error(f"Error in getting workspace CRD: {e}")
-                raise e
-            executing_namespace = executing_workspace["spec"]["namespace"]
+        executing_namespace = executing_workspace["spec"]["namespace"]
 
 
         # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
