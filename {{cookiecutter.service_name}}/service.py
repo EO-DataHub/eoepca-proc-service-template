@@ -490,6 +490,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
 
+        inputs["ADES_KEYCLOAK_CLIENT_SECRET"] = os.getenv("ADES_KEYCLOAK_CLIENT_SECRET")
+
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
@@ -518,8 +520,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Delete the temporary aws-credentials PVC
         logger.info("Delete the temporary aws-credentials PVC")
-        # Load kubeconfig
-        config.load_incluster_config()
 
         # Create a CoreV1Api client instance
         v1 = client.CoreV1Api()
