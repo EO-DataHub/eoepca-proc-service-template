@@ -490,8 +490,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
 
-        inputs["ADES_KEYCLOAK_CLIENT_SECRET"] = {}
-        inputs["ADES_KEYCLOAK_CLIENT_SECRET"]["value"] = os.getenv("ADES_KEYCLOAK_CLIENT_SECRET")
+        inputs["KEYCLOAK_CLIENT_SECRET"] = {}
+        inputs["KEYCLOAK_CLIENT_SECRET"]["value"] = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
