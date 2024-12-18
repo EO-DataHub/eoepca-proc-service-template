@@ -468,7 +468,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         custom_api = client.CustomObjectsApi()
         
         # Extract workspace names
-        calling_workspace_name = inputs["calling_workspace"]["value"]
         executing_workspace_name = inputs["executing_workspace"]["value"]
 
         # Access workspace details for the executing workspace
@@ -527,7 +526,21 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Define the namespace and PVC name
         job_id = conf["additional_parameters"]["job_id"]
-        pvc_name = f"aws-credentials-{job_id}"
+        pvc_name = f"aws-credentials-workspace-{job_id}"
+
+        # Delete the PVC
+        try:
+            logger.info("Deleting the temporary aws-credentials PVC")
+            v1.delete_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=executing_namespace,
+                body=client.V1DeleteOptions(),
+            )
+            logger.info(f"PVC {pvc_name} deleted successfully")
+        except client.exceptions.ApiException as e:
+            logger.error(f"Exception when deleting PVC: {e}")
+
+        pvc_name = f"aws-credentials-service-{job_id}"
 
         # Delete the PVC
         try:
