@@ -43,8 +43,6 @@ import traceback
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-
-
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
 
@@ -85,6 +83,9 @@ class CustomStacIO(DefaultStacIO):
                 .decode("utf-8")
             )
         elif parsed.scheme == "s3":
+            pod_name = os.getenv('HOSTNAME')
+            logger.info(f"Current pod name: {pod_name}")
+
             return (
                 self.s3_client.get_object(Bucket=parsed.netloc, Key=parsed.path[1:])[
                     "Body"
@@ -127,7 +128,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = True
         else:
             self.use_workspace = False
-        self.workspace_name = self.inputs.get("workspace", {}).get("value", "default")
+        self.calling_workspace_name = self.inputs.get("calling_workspace", {}).get("value", "default")
+        self.executing_workspace_name = self.inputs.get("executing_workspace", {}).get("value", "default")
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
@@ -174,6 +176,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
                     storage_credentials = workspace_response["storage"]["credentials"]
 
+                    self.conf["additional_parameters"]["STAGEIN_AWS_SERVICEURL"] = storage_credentials.get("endpoint")
+                    self.conf["additional_parameters"]["STAGEIN_AWS_REGION"] = storage_credentials.get("region")
+
                     self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"] = storage_credentials.get("endpoint")
                     self.conf["additional_parameters"]["STAGEOUT_AWS_ACCESS_KEY_ID"] = storage_credentials.get("access")
                     self.conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = storage_credentials.get("secret")
@@ -192,8 +197,10 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
-            self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
+            self.conf["additional_parameters"]["CALLING_WORKSPACE"] = self.calling_workspace_name
+            self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_workspace_name
             self.conf["additional_parameters"]["workflow_id"] = "{{cookiecutter.workflow_id}}"
+            self.conf["additional_parameters"]["token"] = self.inputs.get("user_token", {}).get("value", "")
 
         except Exception as e:
             logger.error("ERROR in pre_execution_hook...")
@@ -269,7 +276,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             # Update links with HTTPS links
             workspace_domain = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
             bucket = self.conf["additional_parameters"]["STAGEOUT_OUTPUT"]
-            workspace = self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"]
+            workspace = self.conf["additional_parameters"]["CALLING_WORKSPACE"]
             subfolder = self.conf["additional_parameters"]["process"]
             if workspace_domain:
                 for link in collection_dict["links"]:
@@ -339,7 +346,8 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         conf["additional_parameters"]["STAGEOUT_AWS_SECRET_ACCESS_KEY"] = os.environ.get("STAGEOUT_AWS_SECRET_ACCESS_KEY", "minio-secret-password")
         conf["additional_parameters"]["STAGEOUT_AWS_REGION"] = os.environ.get("STAGEOUT_AWS_REGION", "RegionOne")
         conf["additional_parameters"]["STAGEOUT_OUTPUT"] = os.environ.get("STAGEOUT_OUTPUT", "eoepca")
-        conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = os.environ.get("STAGEOUT_WORKSPACE", "default")
+        conf["additional_parameters"]["CALLING_WORKSPACE"] = os.environ.get("CALLING_WORKSPACE", "default")
+        conf["additional_parameters"]["EXECUTING_WORKSPACE"] = os.environ.get("EXECUTING_WORKSPACE", "default")
         conf["additional_parameters"]["STAGEOUT_PULSAR_URL"] = os.environ.get("STAGEOUT_PULSAR_URL", None)
         conf["additional_parameters"]["WORKSPACE_DOMAIN"] = os.environ.get("WORKSPACE_DOMAIN", None)
 
@@ -458,23 +466,31 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
+        
+        # Extract workspace names
+        executing_workspace_name = inputs["executing_workspace"]["value"]
 
-        # Access the custom resource
+        # Access workspace details for the executing workspace
         try:
-            workspace = custom_api.get_namespaced_custom_object(
+            executing_workspace = custom_api.get_namespaced_custom_object(
                 group="core.telespazio-uk.io",
                 version="v1alpha1",
                 namespace="workspaces",
                 plural="workspaces",
-                name=inputs["workspace"]["value"],
+                name=executing_workspace_name,
             )
         except Exception as e:
             logger.error(f"Error in getting workspace CRD: {e}")
             raise e
+        executing_namespace = executing_workspace["spec"]["namespace"]
 
-        service_account = workspace.get("spec", {}).get("serviceAccount", {}).get("name", "default")
+
+        # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
         conf.setdefault("eodhp", {})
-        conf["eodhp"]["serviceAccountName"] = service_account
+        conf["eodhp"]["serviceAccountName"] = "default"
+
+        inputs["KEYCLOAK_CLIENT_SECRET"] = {}
+        inputs["KEYCLOAK_CLIENT_SECRET"]["value"] = os.getenv("KEYCLOAK_CLIENT_SECRET")
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
@@ -498,9 +514,45 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         )
         os.chdir(working_dir)
 
-        runner._namespace_name = workspace["spec"]["namespace"]
+        runner._namespace_name = executing_namespace
 
         exit_status = runner.execute()
+
+        # Delete the temporary aws-credentials PVC
+        logger.info("Delete the temporary aws-credentials PVC")
+
+        # Create a CoreV1Api client instance
+        v1 = client.CoreV1Api()
+
+        # Define the namespace and PVC name
+        job_id = conf["additional_parameters"]["job_id"]
+        pvc_name = f"aws-credentials-workspace-{job_id}"
+
+        # Delete the PVC
+        try:
+            logger.info("Deleting the temporary aws-credentials PVC")
+            v1.delete_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=executing_namespace,
+                body=client.V1DeleteOptions(),
+            )
+            logger.info(f"PVC {pvc_name} deleted successfully")
+        except client.exceptions.ApiException as e:
+            logger.error(f"Exception when deleting PVC: {e}")
+
+        pvc_name = f"aws-credentials-service-{job_id}"
+
+        # Delete the PVC
+        try:
+            logger.info("Deleting the temporary aws-credentials PVC")
+            v1.delete_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=executing_namespace,
+                body=client.V1DeleteOptions(),
+            )
+            logger.info(f"PVC {pvc_name} deleted successfully")
+        except client.exceptions.ApiException as e:
+            logger.error(f"Exception when deleting PVC: {e}")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
