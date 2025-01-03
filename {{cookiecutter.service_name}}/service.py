@@ -198,7 +198,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
             self.conf["additional_parameters"]["process"] = "processing-results"
             self.conf["additional_parameters"]["CALLING_WORKSPACE"] = self.calling_workspace_name
-            self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_worspace_name
+            self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_workspace_name
             self.conf["additional_parameters"]["workflow_id"] = "{{cookiecutter.workflow_id}}"
             self.conf["additional_parameters"]["token"] = self.inputs.get("user_token", {}).get("value", "")
 
