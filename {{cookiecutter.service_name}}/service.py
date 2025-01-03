@@ -189,9 +189,11 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             else:
                 logger.info("Using pre-configured storage details")
 
+            output_prefix = "processing-results/{{cookiecutter.workflow_id}}"
+
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
-            self.conf["additional_parameters"]["process"] = "processing-results"
+            self.conf["additional_parameters"]["process"] = output_prefix
             self.conf["additional_parameters"]["STAGEOUT_WORKSPACE"] = self.workspace_name
             self.conf["additional_parameters"]["workflow_id"] = "{{cookiecutter.workflow_id}}"
 
