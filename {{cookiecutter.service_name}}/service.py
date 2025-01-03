@@ -129,7 +129,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
         else:
             self.use_workspace = False
         self.calling_workspace_name = self.inputs.get("calling_workspace", {}).get("value", "default")
-        self.executing_worspace_name = self.inputs.get("executing_workspace", {}).get("value", "default")
+        self.executing_workspace_name = self.inputs.get("executing_workspace", {}).get("value", "default")
 
         auth_env = self.conf.get("auth_env", {})
         self.ades_rx_token = auth_env.get("jwt", "")
