@@ -466,6 +466,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
+
+        print(inputs)
         
         # Extract workspace names
         executing_workspace_name = inputs["executing_workspace"]["value"]
