@@ -515,42 +515,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         exit_status = runner.execute()
 
-        # Delete the temporary aws-credentials PVC
-        logger.info("Delete the temporary aws-credentials PVC")
-
-        # Create a CoreV1Api client instance
-        v1 = client.CoreV1Api()
-
-        # Define the namespace and PVC name
-        job_id = conf["additional_parameters"]["job_id"]
-        pvc_name = f"aws-credentials-workspace-{job_id}"
-
-        # Delete the PVC
-        try:
-            logger.info("Deleting the temporary aws-credentials PVC")
-            v1.delete_namespaced_persistent_volume_claim(
-                name=pvc_name,
-                namespace=executing_namespace,
-                body=client.V1DeleteOptions(),
-            )
-            logger.info(f"PVC {pvc_name} deleted successfully")
-        except client.exceptions.ApiException as e:
-            logger.error(f"Exception when deleting PVC: {e}")
-
-        pvc_name = f"aws-credentials-service-{job_id}"
-
-        # Delete the PVC
-        try:
-            logger.info("Deleting the temporary aws-credentials PVC")
-            v1.delete_namespaced_persistent_volume_claim(
-                name=pvc_name,
-                namespace=executing_namespace,
-                body=client.V1DeleteOptions(),
-            )
-            logger.info(f"PVC {pvc_name} deleted successfully")
-        except client.exceptions.ApiException as e:
-            logger.error(f"Exception when deleting PVC: {e}")
-
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
             outputs[list(outputs.keys())[0]]["value"] = execution_handler.feature_collection
