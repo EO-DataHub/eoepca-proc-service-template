@@ -128,7 +128,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             self.use_workspace = True
         else:
             self.use_workspace = False
-            
         self.calling_workspace_name = self.inputs.get("calling_workspace", {}).get("value", "default")
         self.executing_workspace_name = self.inputs.get("executing_workspace", {}).get("value", "default")
 
@@ -195,14 +194,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             else:
                 logger.info("Using pre-configured storage details")
 
-            if self.executing_workspace_name in ["airbus", "planet"]:
-                output_prefix = f"commercial-data/{self.executing_workspace_name}"
-            else:
-                output_prefix = "processing-results/{{cookiecutter.workflow_id}}"
-
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
-            self.conf["additional_parameters"]["process"] = output_prefix
+            self.conf["additional_parameters"]["process"] = "processing-results"
             self.conf["additional_parameters"]["CALLING_WORKSPACE"] = self.calling_workspace_name
             self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_workspace_name
             self.conf["additional_parameters"]["workflow_id"] = "{{cookiecutter.workflow_id}}"
@@ -495,6 +489,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
 
+        inputs["KEYCLOAK_CLIENT_SECRET"] = {}
+        inputs["KEYCLOAK_CLIENT_SECRET"]["value"] = os.getenv("KEYCLOAK_CLIENT_SECRET")
+
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
         runner = ZooCalrissianRunner(
@@ -520,6 +517,42 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         runner._namespace_name = executing_namespace
 
         exit_status = runner.execute()
+
+        # Delete the temporary aws-credentials PVC
+        logger.info("Delete the temporary aws-credentials PVC")
+
+        # Create a CoreV1Api client instance
+        v1 = client.CoreV1Api()
+
+        # Define the namespace and PVC name
+        job_id = conf["additional_parameters"]["job_id"]
+        pvc_name = f"aws-credentials-workspace-{job_id}"
+
+        # Delete the PVC
+        try:
+            logger.info("Deleting the temporary aws-credentials PVC")
+            v1.delete_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=executing_namespace,
+                body=client.V1DeleteOptions(),
+            )
+            logger.info(f"PVC {pvc_name} deleted successfully")
+        except client.exceptions.ApiException as e:
+            logger.error(f"Exception when deleting PVC: {e}")
+
+        pvc_name = f"aws-credentials-service-{job_id}"
+
+        # Delete the PVC
+        try:
+            logger.info("Deleting the temporary aws-credentials PVC")
+            v1.delete_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=executing_namespace,
+                body=client.V1DeleteOptions(),
+            )
+            logger.info(f"PVC {pvc_name} deleted successfully")
+        except client.exceptions.ApiException as e:
+            logger.error(f"Exception when deleting PVC: {e}")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
