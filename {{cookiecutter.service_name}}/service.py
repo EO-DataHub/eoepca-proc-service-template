@@ -202,6 +202,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
+            logger.info(f"Job ID was set to {self.conf['additional_parameters']['job_id']}")
             self.conf["additional_parameters"]["process"] = output_prefix
             self.conf["additional_parameters"]["CALLING_WORKSPACE"] = self.calling_workspace_name
             self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_workspace_name
