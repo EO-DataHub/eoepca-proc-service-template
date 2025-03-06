@@ -528,35 +528,35 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         job_id = conf["lenv"]["usid"]
 
         # Create a CoreV1Api client instance
-        v1 = client.CoreV1Api()
+        # v1 = client.CoreV1Api()
 
-        # Delete params configmap
-        params_cm_name = f"params-{job_id}"
+        # # Delete params configmap
+        # params_cm_name = f"params-{job_id}"
 
-        # Delete the ConfigMap
-        try:
-            v1.delete_namespaced_configmap(
-                name=params_cm_name,
-                namespace=executing_namespace,
-                body=client.V1DeleteOptions(),
-            )
-            logger.info(f"ConfigMap {params_cm_name} deleted successfully")
-        except client.exceptions.ApiException as e:
-            logger.error(f"Exception when deleting ConfigMap {params_cm_name}: {e}")
+        # # Delete the ConfigMap
+        # try:
+        #     v1.delete_namespaced_configmap(
+        #         name=params_cm_name,
+        #         namespace=executing_namespace,
+        #         body=client.V1DeleteOptions(),
+        #     )
+        #     logger.info(f"ConfigMap {params_cm_name} deleted successfully")
+        # except client.exceptions.ApiException as e:
+        #     logger.error(f"Exception when deleting ConfigMap {params_cm_name}: {e}")
 
-        # Delete cwl-workflow configmap
-        cwl_cm_name = f"cwl-workflow-{job_id}"
+        # # Delete cwl-workflow configmap
+        # cwl_cm_name = f"cwl-workflow-{job_id}"
 
-        # Delete the ConfigMap
-        try:
-            v1.delete_namespaced_configmap(
-                name=cwl_cm_name,
-                namespace=executing_namespace,
-                body=client.V1DeleteOptions(),
-            )
-            logger.info(f"ConfigMap {cwl_cm_name} deleted successfully")
-        except client.exceptions.ApiException as e:
-            logger.error(f"Exception when deleting ConfigMap {cwl_cm_name}: {e}")
+        # # Delete the ConfigMap
+        # try:
+        #     v1.delete_namespaced_configmap(
+        #         name=cwl_cm_name,
+        #         namespace=executing_namespace,
+        #         body=client.V1DeleteOptions(),
+        #     )
+        #     logger.info(f"ConfigMap {cwl_cm_name} deleted successfully")
+        # except client.exceptions.ApiException as e:
+        #     logger.error(f"Exception when deleting ConfigMap {cwl_cm_name}: {e}")
 
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
