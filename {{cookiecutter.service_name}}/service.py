@@ -524,6 +524,22 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         exit_status = runner.execute()
 
+        # Remove params configmaps
+        job_id = conf["lenv"]["usid"]
+        params_cm_name = f"params-{job_id}"
+
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="core.telespazio-uk.io",
+                version="v1alpha1",
+                namespace=executing_namespace,
+                plural="configmaps",
+                name=params_cm_name,
+            )
+        except Exception as e:
+            logger.error(f"Error in deleting params configmap: {e}")
+
+
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
             outputs[list(outputs.keys())[0]]["value"] = execution_handler.feature_collection
