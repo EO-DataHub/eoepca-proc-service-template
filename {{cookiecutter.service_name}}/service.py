@@ -525,13 +525,13 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         exit_status = runner.execute()
 
         # Set job_id
-        job_id = conf["lenv"]["usid"]
+        # job_id = conf["lenv"]["usid"]
 
-        # Create a CoreV1Api client instance
-        v1 = client.CoreV1Api()
+        # # Create a CoreV1Api client instance
+        # v1 = client.CoreV1Api()
 
-        # Delete params configmap
-        params_cm_name = f"params-{job_id}"
+        # # Delete params configmap
+        # params_cm_name = f"params-{job_id}"
 
         # Delete the ConfigMap
         # try:
