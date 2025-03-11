@@ -202,7 +202,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             lenv = self.conf.get("lenv", {})
             self.conf["additional_parameters"]["job_id"] = lenv.get("usid", "")
-            logger.info(f"Job ID was set to {self.conf['additional_parameters']['job_id']}")
             self.conf["additional_parameters"]["process"] = output_prefix
             self.conf["additional_parameters"]["CALLING_WORKSPACE"] = self.calling_workspace_name
             self.conf["additional_parameters"]["EXECUTING_WORKSPACE"] = self.executing_workspace_name
@@ -495,8 +494,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
         conf.setdefault("eodhp", {})
         conf["eodhp"]["serviceAccountName"] = "default"
-
-        logger.info(f"CONF IS NOW {conf}")
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
