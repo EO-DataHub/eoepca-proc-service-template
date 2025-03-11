@@ -535,9 +535,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Delete the ConfigMap
         try:
-            v1.delete_namespaced_configmap(
+            v1.delete_namespaced_config_map(
                 name=params_cm_name,
                 namespace=executing_namespace,
+                body=client.V1DeleteOptions()
             )
             logger.info(f"ConfigMap {params_cm_name} deleted successfully")
         except client.exceptions.ApiException as e:
@@ -548,9 +549,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Delete the ConfigMap
         try:
-            v1.delete_namespaced_configmap(
+            v1.delete_namespaced_config_map(
                 name=cwl_cm_name,
                 namespace=executing_namespace,
+                body=client.V1DeleteOptions()
             )
             logger.info(f"ConfigMap {cwl_cm_name} deleted successfully")
         except client.exceptions.ApiException as e:
