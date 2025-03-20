@@ -247,6 +247,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             collection = None
             try:
                 collection = next(cat.get_all_collections())
+                collection_id = collection.id
                 logger.info("Got collection from outputs")
             except:
                 try:
