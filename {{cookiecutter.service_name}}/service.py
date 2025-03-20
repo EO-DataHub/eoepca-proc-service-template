@@ -244,7 +244,6 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 logger.error(f"Exception: {e}")
 
             job_id = self.conf["additional_parameters"]["job_id"]
-            logger.info(f"Create collection with ID col_{job_id}")
             collection = None
             try:
                 collection = next(cat.get_all_collections())
@@ -252,6 +251,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             except:
                 try:
                     logger.info("No collection found in outputs, creating from items")
+                    collection_id = "collection" # some default ID
                     items=cat.get_all_items()
                     itemFinal=[]
                     for i in items:
@@ -263,7 +263,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                             cDict["storage:region"]=self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
                             cDict["storage:endpoint"]=self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
                             i.assets[a]=i.assets[a].from_dict(cDict)
-                        i.collection_id=f"col_{job_id}"
+                        i.collection_id=collection_id
                         itemFinal+=[i.clone()]
                     collection = ItemCollection(items=itemFinal)
                     logger.info("Created collection from items")
@@ -277,7 +277,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 return
 
             collection_dict=collection.to_dict()
-            collection_dict["id"]=f"col_{job_id}"
+            collection_dict["id"]=collection_id
 
             # Update links with HTTPS links
             workspace_domain = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
