@@ -455,8 +455,9 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
 
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
-    # Delete params configmap
-    # Delete the ConfigMap
+    """"
+    Delete the specified ConfigMap
+    """
     try:
         v1.delete_namespaced_config_map(
             name=name,
