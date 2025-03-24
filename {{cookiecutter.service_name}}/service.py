@@ -196,7 +196,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 logger.info("Using pre-configured storage details")
 
             if self.executing_workspace_name in ["airbus", "planet"]:
-                output_prefix = f"commercial-data/{self.executing_workspace_name}"
+                output_prefix = f"commercial-data"
             else:
                 output_prefix = "processing-results/{{cookiecutter.workflow_id}}"
 
@@ -244,14 +244,15 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 logger.error(f"Exception: {e}")
 
             job_id = self.conf["additional_parameters"]["job_id"]
-            logger.info(f"Create collection with ID col_{job_id}")
             collection = None
             try:
                 collection = next(cat.get_all_collections())
+                collection_id = collection.id
                 logger.info("Got collection from outputs")
             except:
                 try:
                     logger.info("No collection found in outputs, creating from items")
+                    collection_id = "collection" # some default ID
                     items=cat.get_all_items()
                     itemFinal=[]
                     for i in items:
@@ -263,7 +264,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                             cDict["storage:region"]=self.conf["additional_parameters"]["STAGEOUT_AWS_REGION"]
                             cDict["storage:endpoint"]=self.conf["additional_parameters"]["STAGEOUT_AWS_SERVICEURL"]
                             i.assets[a]=i.assets[a].from_dict(cDict)
-                        i.collection_id=f"col_{job_id}"
+                        i.collection_id=collection_id
                         itemFinal+=[i.clone()]
                     collection = ItemCollection(items=itemFinal)
                     logger.info("Created collection from items")
@@ -277,7 +278,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 return
 
             collection_dict=collection.to_dict()
-            collection_dict["id"]=f"col_{job_id}"
+            collection_dict["id"]=collection_id
 
             # Update links with HTTPS links
             workspace_domain = self.conf["additional_parameters"]["WORKSPACE_DOMAIN"]
@@ -453,6 +454,21 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
+def delete_configmap(v1, name: str, executing_namespace: str = "default"):
+    """"
+    Delete the specified ConfigMap
+    """
+    try:
+        v1.delete_namespaced_config_map(
+            name=name,
+            namespace=executing_namespace,
+            body=client.V1DeleteOptions()
+        )
+        logger.info(f"ConfigMap {name} deleted successfully")
+    except client.exceptions.ApiException as e:
+        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
+
+
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
 
     try:
@@ -520,6 +536,17 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         runner._namespace_name = executing_namespace
 
         exit_status = runner.execute()
+
+        # Set job_id
+        job_id = conf["lenv"]["usid"]
+
+        # Create a CoreV1Api client instance
+        v1 = client.CoreV1Api()
+
+        delete_configmap(v1, f"params-{job_id}", executing_namespace)
+        delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
+        delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
+        delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
