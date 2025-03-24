@@ -454,6 +454,21 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
+def delete_configmap(v1, name: str, executing_namespace: str = "default"):
+    """"
+    Delete the specified ConfigMap
+    """
+    try:
+        v1.delete_namespaced_config_map(
+            name=name,
+            namespace=executing_namespace,
+            body=client.V1DeleteOptions()
+        )
+        logger.info(f"ConfigMap {name} deleted successfully")
+    except client.exceptions.ApiException as e:
+        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
+
+
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
 
     try:
@@ -528,34 +543,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Create a CoreV1Api client instance
         v1 = client.CoreV1Api()
 
-        # Delete params configmap
-        params_cm_name = f"params-{job_id}"
-
-        # Delete the ConfigMap
-        try:
-            v1.delete_namespaced_config_map(
-                name=params_cm_name,
-                namespace=executing_namespace,
-                body=client.V1DeleteOptions()
-            )
-            logger.info(f"ConfigMap {params_cm_name} deleted successfully")
-        except client.exceptions.ApiException as e:
-            logger.error(f"Exception when deleting ConfigMap {params_cm_name}: {e}")
-
-        # Delete cwl-workflow configmap
-        cwl_cm_name = f"cwl-workflow-{job_id}"
-
-        # Delete the ConfigMap
-        try:
-            v1.delete_namespaced_config_map(
-                name=cwl_cm_name,
-                namespace=executing_namespace,
-                body=client.V1DeleteOptions()
-            )
-            logger.info(f"ConfigMap {cwl_cm_name} deleted successfully")
-        except client.exceptions.ApiException as e:
-            logger.error(f"Exception when deleting ConfigMap {cwl_cm_name}: {e}")
-
+        delete_configmap(v1, f"params-{job_id}", executing_namespace)
+        delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
+        delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
+        delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
