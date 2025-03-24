@@ -454,7 +454,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
-def delete_configmap(v1, name: str):
+def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     # Delete params configmap
     # Delete the ConfigMap
     try:
@@ -542,10 +542,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Create a CoreV1Api client instance
         v1 = client.CoreV1Api()
 
-        delete_configmap(v1, f"params-{job_id}")
-        delete_configmap(v1, f"cwl-workflow-{job_id}")
-        delete_configmap(v1, f"pod-node-selector-{job_id}")
-        delete_configmap(v1, f"pod-env-vars-{job_id}")
+        delete_configmap(v1, f"params-{job_id}", executing_namespace)
+        delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
+        delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
+        delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
