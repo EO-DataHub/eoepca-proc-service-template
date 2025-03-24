@@ -456,18 +456,16 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
 def delete_configmap(v1, name: str):
     # Delete params configmap
-    params_cm_name = f"{name}-{job_id}"
-
     # Delete the ConfigMap
     try:
         v1.delete_namespaced_config_map(
-            name=params_cm_name,
+            name=name,
             namespace=executing_namespace,
             body=client.V1DeleteOptions()
         )
-        logger.info(f"ConfigMap {params_cm_name} deleted successfully")
+        logger.info(f"ConfigMap {name} deleted successfully")
     except client.exceptions.ApiException as e:
-        logger.error(f"Exception when deleting ConfigMap {params_cm_name}: {e}")
+        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
 
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
@@ -544,10 +542,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Create a CoreV1Api client instance
         v1 = client.CoreV1Api()
 
-        delete_configmap(v1, "params")
-        delete_configmap(v1, "cwl-workflow")
-        delete_configmap(v1, "pod-node-selector")
-        delete_configmap(v1, "pod-env-vars")
+        delete_configmap(v1, f"params-{job_id}")
+        delete_configmap(v1, f"cwl-workflow-{job_id}")
+        delete_configmap(v1, f"pod-node-selector-{job_id}")
+        delete_configmap(v1, f"pod-env-vars-{job_id}")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
