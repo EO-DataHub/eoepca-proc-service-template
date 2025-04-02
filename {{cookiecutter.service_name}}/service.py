@@ -43,6 +43,13 @@ import traceback
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
+KEYCLOAK_BASE_URL = os.environ.get("KEYCLOAK_BASE_URL", "keycloak-base-url")
+REALM = os.environ.get("KEYCLOAK_REALM", "realm")
+CLIENT_ID = os.environ.get("CLIENT_ID", "client-id")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "client-secret")
+
+KEYCLOAK_URL = f"https://{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/revoke"
+
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
 
@@ -454,6 +461,24 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
+def deactivate_api_token(token: str):
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "token_type_hint": "access_token",
+        "token": token,
+    }
+
+    response = requests.post(
+        KEYCLOAK_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    if response.status_code == 200:
+        logger.info("Token deactivated successfully")
+
+
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     """"
     Delete the specified ConfigMap
@@ -548,6 +573,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
+        # Deactivate workspace API tokens for both calling and executing workspace
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_TOKEN")["value"])
+        deactivate_api_token(inputs.get("EXECUTING_WORKSPACE_TOKEN")["value"])
+
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
             outputs[list(outputs.keys())[0]]["value"] = execution_handler.feature_collection
@@ -556,6 +585,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         else:
             conf["lenv"]["message"] = zoo._("Execution failed")
             return zoo.SERVICE_FAILED
+
+        # Deactivate workspace API tokens for both calling and executing workspace
+        deactivate_api_token(inputsget("CALLING_WORKSPACE_TOKEN")["value"])
+        deactivate_api_token(inputsget("EXECUTING_WORKSPACE_TOKEN")["value"])
 
     except Exception as e:
         logger.error("ERROR in processing execution template...")
