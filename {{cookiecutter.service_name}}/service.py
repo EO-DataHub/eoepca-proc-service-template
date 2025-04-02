@@ -44,11 +44,10 @@ logger.remove()
 logger.add(sys.stderr, level="INFO")
 
 KEYCLOAK_BASE_URL = os.environ.get("KEYCLOAK_BASE_URL", "keycloak-base-url")
-REALM = os.environ.get("KEYCLOAK_REALM", "realm")
 CLIENT_ID = os.environ.get("CLIENT_ID", "client-id")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "client-secret")
 
-KEYCLOAK_URL = f"https://{KEYCLOAK_BASE_URL}/realms/{REALM}/protocol/openid-connect/revoke"
+KEYCLOAK_URL = f"https://{KEYCLOAK_BASE_URL}/protocol/openid-connect/revoke"
 
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
