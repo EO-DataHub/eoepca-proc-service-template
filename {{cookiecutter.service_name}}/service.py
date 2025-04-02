@@ -475,8 +475,10 @@ def deactivate_api_token(token: str):
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 
-    if response.status_code == 200:
+    if response.status_code == 204:
         logger.info("Token deactivated successfully")
+    else:
+        logger.error(f"Failed to deactivate token: {response.status_code} - {response.text}")
 
 
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
