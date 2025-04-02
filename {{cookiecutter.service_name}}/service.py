@@ -460,7 +460,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
-def deactivate_api_token(token: str):
+def deactivate_api_token(token: str, token_name: str):
     payload = {
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
@@ -475,9 +475,9 @@ def deactivate_api_token(token: str):
     )
 
     if response.status_code == 200:
-        logger.info("Token deactivated successfully")
+        logger.info("Token for %s deactivated successfully", token_name)
     else:
-        logger.error(f"Failed to deactivate token: {response.status_code} - {response.text}")
+        logger.error("Failed to deactivate token for %s: %s - %s", token_name, response.status_code, response.text)
 
 
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
@@ -490,9 +490,9 @@ def delete_configmap(v1, name: str, executing_namespace: str = "default"):
             namespace=executing_namespace,
             body=client.V1DeleteOptions()
         )
-        logger.info(f"ConfigMap {name} deleted successfully")
+        logger.info("ConfigMap %s deleted successfully", name)
     except client.exceptions.ApiException as e:
-        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
+        logger.error("Exception when deleting ConfigMap %s: %s", name, e)
 
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
@@ -575,8 +575,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         # Deactivate workspace API tokens for both calling and executing workspace
-        deactivate_api_token(inputs.get("CALLING_WORKSPACE_TOKEN")["value"])
-        deactivate_api_token(inputs.get("EXECUTING_WORKSPACE_TOKEN")["value"])
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_TOKEN")["value"], "CALLING_WORKSPACE_TOKEN")
+        deactivate_api_token(inputs.get("EXECUTING_WORKSPACE_TOKEN")["value"], "EXECUTING_WORKSPACE_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
