@@ -575,8 +575,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         # Deactivate workspace API tokens for both calling and executing workspace
-        deactivate_api_token(inputs.get("CALLING_WORKSPACE_TOKEN")["value"], "CALLING_WORKSPACE_TOKEN")
-        deactivate_api_token(inputs.get("EXECUTING_WORKSPACE_TOKEN")["value"], "EXECUTING_WORKSPACE_TOKEN")
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN")["value"], "CALLING_WORKSPACE_ACCESS_TOKEN")
+        deactivate_api_token(inputs.get("WORKSPACE_ACCESS_TOKEN")["value"], "EXECUTING_WORKSPACE_ACCESS_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
