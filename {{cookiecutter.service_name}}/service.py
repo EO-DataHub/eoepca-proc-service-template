@@ -1,5 +1,6 @@
 # see https://zoo-project.github.io/workshops/2014/first_service.html#f1
 import pathlib
+from typing import Optional
 
 try:
     import zoo
@@ -42,6 +43,12 @@ import traceback
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
+
+KEYCLOAK_BASE_URL = os.environ.get("KEYCLOAK_BASE_URL", "keycloak-base-url")
+CLIENT_ID = os.environ.get("CLIENT_ID", "client-id")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "client-secret")
+
+KEYCLOAK_URL = f"https://{KEYCLOAK_BASE_URL}/protocol/openid-connect/revoke"
 
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
@@ -454,6 +461,32 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
+def deactivate_api_token(token: Optional[str], token_name: str):
+    """
+    Deactivate API Access Token
+    """
+    if not token:
+        logger.error(f"Failed to deactivate token for {token_name}: no token provided")
+        return
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "token_type_hint": "access_token",
+        "token": token,
+    }
+
+    response = requests.post(
+        KEYCLOAK_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    if response.status_code == 200:
+        logger.info(f"Token for {token_name} deactivated successfully")
+    else:
+        logger.error(f"Failed to deactivate token for {token_name}: {response.status_code} - {response.text}")
+
+
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     """"
     Delete the specified ConfigMap
@@ -547,6 +580,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
+
+        # Deactivate workspace API tokens for both calling and executing workspace
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN", {}).get("value"), "CALLING_WORKSPACE_ACCESS_TOKEN")
+        deactivate_api_token(inputs.get("WORKSPACE_ACCESS_TOKEN", {}).get("value"), "EXECUTING_WORKSPACE_ACCESS_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
