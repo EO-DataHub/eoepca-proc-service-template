@@ -1,5 +1,6 @@
 # see https://zoo-project.github.io/workshops/2014/first_service.html#f1
 import pathlib
+from typing import Optional
 
 try:
     import zoo
@@ -460,7 +461,13 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
-def deactivate_api_token(token: str, token_name: str):
+def deactivate_api_token(token: Optional[str], token_name: str):
+    """
+    Deactivate API Access Token
+    """
+    if not token:
+        logger.error(f"Failed to deactivate token for {token_name}: no token provided")
+        return
     payload = {
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
@@ -575,8 +582,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         # Deactivate workspace API tokens for both calling and executing workspace
-        deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN")["value"], "CALLING_WORKSPACE_ACCESS_TOKEN")
-        deactivate_api_token(inputs.get("WORKSPACE_ACCESS_TOKEN")["value"], "EXECUTING_WORKSPACE_ACCESS_TOKEN")
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN", {}).get("value"), "CALLING_WORKSPACE_ACCESS_TOKEN")
+        deactivate_api_token(inputs.get("WORKSPACE_ACCESS_TOKEN", {}).get("value"), "EXECUTING_WORKSPACE_ACCESS_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
