@@ -587,10 +587,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             conf["lenv"]["message"] = zoo._("Execution failed")
             return zoo.SERVICE_FAILED
 
-        # Deactivate workspace API tokens for both calling and executing workspace
-        deactivate_api_token(inputsget("CALLING_WORKSPACE_TOKEN")["value"])
-        deactivate_api_token(inputsget("EXECUTING_WORKSPACE_TOKEN")["value"])
-
     except Exception as e:
         logger.error("ERROR in processing execution template...")
         logger.info("Try fetching logs if any...")
