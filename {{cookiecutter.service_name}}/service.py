@@ -1,5 +1,6 @@
 # see https://zoo-project.github.io/workshops/2014/first_service.html#f1
 import pathlib
+from typing import Optional
 
 try:
     import zoo
@@ -460,7 +461,13 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
-def deactivate_api_token(token: str, token_name: str):
+def deactivate_api_token(token: Optional[str], token_name: str):
+    """
+    Deactivate API Access Token
+    """
+    if not token:
+        logger.error(f"Failed to deactivate token for {token_name}: no token provided")
+        return
     payload = {
         "client_id": CLIENT_ID,
         "client_secret": CLIENT_SECRET,
@@ -475,9 +482,9 @@ def deactivate_api_token(token: str, token_name: str):
     )
 
     if response.status_code == 200:
-        logger.info("Token for %s deactivated successfully", token_name)
+        logger.info(f"Token for {token_name} deactivated successfully")
     else:
-        logger.error("Failed to deactivate token for %s: %s - %s", token_name, response.status_code, response.text)
+        logger.error(f"Failed to deactivate token for {token_name}: {response.status_code} - {response.text}")
 
 
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
@@ -490,9 +497,9 @@ def delete_configmap(v1, name: str, executing_namespace: str = "default"):
             namespace=executing_namespace,
             body=client.V1DeleteOptions()
         )
-        logger.info("ConfigMap %s deleted successfully", name)
+        logger.info(f"ConfigMap {name} deleted successfully")
     except client.exceptions.ApiException as e:
-        logger.error("Exception when deleting ConfigMap %s: %s", name, e)
+        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
 
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
@@ -575,8 +582,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
 
         # Deactivate workspace API tokens for both calling and executing workspace
-        deactivate_api_token(inputs.get("CALLING_WORKSPACE_TOKEN")["value"], "CALLING_WORKSPACE_TOKEN")
-        deactivate_api_token(inputs.get("EXECUTING_WORKSPACE_TOKEN")["value"], "EXECUTING_WORKSPACE_TOKEN")
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN", {}).get("value"), "CALLING_WORKSPACE_ACCESS_TOKEN")
+        deactivate_api_token(inputs.get("WORKSPACE_ACCESS_TOKEN", {}).get("value"), "EXECUTING_WORKSPACE_ACCESS_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
