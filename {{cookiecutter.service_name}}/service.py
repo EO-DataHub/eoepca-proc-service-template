@@ -475,9 +475,9 @@ def deactivate_api_token(token: str, token_name: str):
     )
 
     if response.status_code == 200:
-        logger.info("Token for %s deactivated successfully", token_name)
+        logger.info(f"Token for {token_name} deactivated successfully")
     else:
-        logger.error("Failed to deactivate token for %s: %s - %s", token_name, response.status_code, response.text)
+        logger.error(f"Failed to deactivate token for {token_name}: {response.status_code} - {response.text}")
 
 
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
@@ -490,9 +490,9 @@ def delete_configmap(v1, name: str, executing_namespace: str = "default"):
             namespace=executing_namespace,
             body=client.V1DeleteOptions()
         )
-        logger.info("ConfigMap %s deleted successfully", name)
+        logger.info(f"ConfigMap {name} deleted successfully")
     except client.exceptions.ApiException as e:
-        logger.error("Exception when deleting ConfigMap %s: %s", name, e)
+        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
 
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
