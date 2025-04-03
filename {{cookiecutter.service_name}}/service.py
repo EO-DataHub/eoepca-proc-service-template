@@ -43,6 +43,12 @@ import traceback
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
+KEYCLOAK_BASE_URL = os.environ.get("KEYCLOAK_BASE_URL", "keycloak-base-url")
+CLIENT_ID = os.environ.get("CLIENT_ID", "client-id")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "client-secret")
+
+KEYCLOAK_URL = f"https://{KEYCLOAK_BASE_URL}/protocol/openid-connect/revoke"
+
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
 
@@ -454,6 +460,26 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
+def deactivate_api_token(token: str, token_name: str):
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "token_type_hint": "access_token",
+        "token": token,
+    }
+
+    response = requests.post(
+        KEYCLOAK_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    if response.status_code == 200:
+        logger.info("Token for %s deactivated successfully", token_name)
+    else:
+        logger.error("Failed to deactivate token for %s: %s - %s", token_name, response.status_code, response.text)
+
+
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     """"
     Delete the specified ConfigMap
@@ -464,9 +490,9 @@ def delete_configmap(v1, name: str, executing_namespace: str = "default"):
             namespace=executing_namespace,
             body=client.V1DeleteOptions()
         )
-        logger.info(f"ConfigMap {name} deleted successfully")
+        logger.info("ConfigMap %s deleted successfully", name)
     except client.exceptions.ApiException as e:
-        logger.error(f"Exception when deleting ConfigMap {name}: {e}")
+        logger.error("Exception when deleting ConfigMap %s: %s", name, e)
 
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
@@ -547,6 +573,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
+
+        # Deactivate workspace API tokens for both calling and executing workspace
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_TOKEN")["value"], "CALLING_WORKSPACE_TOKEN")
+        deactivate_api_token(inputs.get("EXECUTING_WORKSPACE_TOKEN")["value"], "EXECUTING_WORKSPACE_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
