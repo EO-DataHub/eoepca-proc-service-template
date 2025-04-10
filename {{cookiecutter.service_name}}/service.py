@@ -487,6 +487,21 @@ def deactivate_api_token(token: Optional[str], token_name: str):
         logger.error(f"Failed to deactivate token for {token_name}: {response.status_code} - {response.text}")
 
 
+def delete_pvc(v1, name: str, executing_namespace: str = "default"):
+    """"
+    Delete the specified Persistent Volume Claim
+    """
+    try:
+        v1.delete_namespaced_persistent_volume_claim(
+            name=name,
+            namespace=executing_namespace,
+            body=client.V1DeleteOptions()
+        )
+        logger.info(f"PVC {name} deleted successfully")
+    except client.exceptions.ApiException as e:
+        logger.error(f"Exception when deleting PVC {name}: {e}")
+
+
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     """"
     Delete the specified ConfigMap
@@ -580,6 +595,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
+
+        delete_pvc(v1, f"calrissian-wdir-{job_id}", executing_namespace)
 
         # Deactivate workspace API tokens for both calling and executing workspace
         deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN", {}).get("value"), "CALLING_WORKSPACE_ACCESS_TOKEN")
