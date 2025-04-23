@@ -573,7 +573,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             if len(name_prefix) > 31:
                 name_prefix = name_prefix[:31]
             service_account_name = f"{name_prefix}-{conf['lenv']['usid']}"
-            calling_namespace = executing_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
+            calling_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
             calling_service_account = v1.read_namespaced_service_account(name="default", namespace=calling_namespace)
             # Extract annotations
             annotations = calling_service_account.metadata.annotations
