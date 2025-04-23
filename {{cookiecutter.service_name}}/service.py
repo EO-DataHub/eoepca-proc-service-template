@@ -569,7 +569,10 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         conf["eodhp"]["serviceAccountNameExecutor"] = "default"
 
         if is_user_service:
-            service_account_name = f"temp-{calling_workspace_name}-{conf['lenv']['usid']}"
+            name_prefix = f"temp-{calling_workspace_name}"
+            if len(name_prefix) > 31:
+                name_prefix = name_prefix[:31]
+            service_account_name = f"{name_prefix}-{conf['lenv']['usid']}"
             calling_namespace = executing_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
             calling_service_account = v1.read_namespaced_service_account(name="default", namespace=calling_namespace)
             # Extract annotations
@@ -584,6 +587,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             created_sa = v1.create_namespaced_service_account(
                 namespace=executing_namespace, body=service_account
             )
+
+            logger.info(f"Service account {service_account_name} created in namespace {executing_namespace}")
 
             conf["eodhp"]["serviceAccountNameCaller"] = service_account_name
 
