@@ -516,7 +516,7 @@ def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     except client.exceptions.ApiException as e:
         logger.error(f"Exception when deleting ConfigMap {name}: {e}")
 
-def get_namespace_from_workspace(workspace: str):
+def get_namespace_from_workspace(custom_api, workspace: str):
     """"
     Get the namespace associated with the given workspace
     """
@@ -563,7 +563,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         calling_workspace_name = inputs["calling_workspace"]["value"]
 
         # Access workspace details for the executing workspace
-        executing_namespace = get_namespace_from_workspace(executing_workspace_name)
+        executing_namespace = get_namespace_from_workspace(custom_api, executing_workspace_name)
 
         conf.setdefault("eodhp", {})           
         conf["eodhp"]["serviceAccountNameCaller"] = "default" # need to determine the correct one if user service
@@ -571,7 +571,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         if is_user_service:
             service_account_name = f"temp-{calling_workspace_name}-{conf['lenv']['usid']}"
-            calling_namespace = executing_namespace = get_namespace_from_workspace(calling_workspace_name)
+            calling_namespace = executing_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
             calling_service_account = v1.read_namespaced_service_account(name="default", namespace=calling_namespace)
             # Extract annotations
             annotations = calling_service_account.metadata.annotations
