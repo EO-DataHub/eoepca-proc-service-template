@@ -548,12 +548,11 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         is_user_service = inputs["executing_workspace"]["value"] != inputs["calling_workspace"]["value"]
 
-        # Create a CoreV1Api client instance for use later
-        v1 = client.CoreV1Api()
-
-        ## Identify the running namespace for the provided workspace ##
         # Load kubeconfig
         config.load_incluster_config()
+
+        # Create a CoreV1Api client instance for use later
+        v1 = client.CoreV1Api()
 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
