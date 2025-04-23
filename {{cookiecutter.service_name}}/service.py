@@ -516,6 +516,23 @@ def delete_configmap(v1, name: str, executing_namespace: str = "default"):
     except client.exceptions.ApiException as e:
         logger.error(f"Exception when deleting ConfigMap {name}: {e}")
 
+def get_namespace_from_workspace(workspace: str):
+    """"
+    Get the namespace associated with the given workspace
+    """
+    try:
+        workspace = custom_api.get_namespaced_custom_object(
+            group="core.telespazio-uk.io",
+            version="v1alpha1",
+            namespace="workspaces",
+            plural="workspaces",
+            name=workspace,
+        )
+    except Exception as e:
+        logger.error(f"Error in getting {workspace} workspace CRD: {e}")
+        raise e
+    return workspace["spec"]["namespace"]
+
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
 
@@ -529,8 +546,12 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ) as stream:
             cwl = yaml.safe_load(stream)
 
-        ## Identify the running namespace for the provided workspace ##
+        is_user_service = inputs["executing_workspace"]["value"] != inputs["calling_workspace"]["value"]
 
+        # Create a CoreV1Api client instance for use later
+        v1 = client.CoreV1Api()
+
+        ## Identify the running namespace for the provided workspace ##
         # Load kubeconfig
         config.load_incluster_config()
 
@@ -539,25 +560,33 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         
         # Extract workspace names
         executing_workspace_name = inputs["executing_workspace"]["value"]
+        calling_workspace_name = inputs["calling_workspace"]["value"]
 
         # Access workspace details for the executing workspace
-        try:
-            executing_workspace = custom_api.get_namespaced_custom_object(
-                group="core.telespazio-uk.io",
-                version="v1alpha1",
-                namespace="workspaces",
-                plural="workspaces",
-                name=executing_workspace_name,
+        executing_namespace = get_namespace_from_workspace(executing_workspace_name)
+
+        conf.setdefault("eodhp", {})           
+        conf["eodhp"]["serviceAccountNameCaller"] = "default" # need to determine the correct one if user service
+        conf["eodhp"]["serviceAccountNameExecutor"] = "default"
+
+        if is_user_service:
+            service_account_name = f"temp-{calling_workspace_name}-{conf['lenv']['usid']}"
+            calling_namespace = executing_namespace = get_namespace_from_workspace(calling_workspace_name)
+            calling_service_account = v1.read_namespaced_service_account(name="default", namespace=calling_namespace)
+            # Extract annotations
+            annotations = calling_service_account.metadata.annotations
+            # Create temporary service account for this workspace
+            # Define the service account metadata
+            service_account = client.V1ServiceAccount(
+                metadata=client.V1ObjectMeta(name=service_account_name, annotations=annotations)
             )
-        except Exception as e:
-            logger.error(f"Error in getting workspace CRD: {e}")
-            raise e
-        executing_namespace = executing_workspace["spec"]["namespace"]
 
+            # Create the service account in the specified namespace
+            created_sa = v1.create_namespaced_service_account(
+                namespace=executing_namespace, body=service_account
+            )
 
-        # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
-        conf.setdefault("eodhp", {})
-        conf["eodhp"]["serviceAccountName"] = "default"
+            conf["eodhp"]["serviceAccountNameCaller"] = service_account_name
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
@@ -587,9 +616,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         # Set job_id
         job_id = conf["lenv"]["usid"]
-
-        # Create a CoreV1Api client instance
-        v1 = client.CoreV1Api()
 
         delete_configmap(v1, f"params-{job_id}", executing_namespace)
         delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
