@@ -583,7 +583,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         if is_user_service:
             calling_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
-            name_prefix = f"temp-{calling_workspace_name}"
+            name_prefix = f"temp-{calling_namespace}"
             service_account_name = f"{name_prefix}-{conf['lenv']['usid']}"
             if len(service_account_name) > 63:
                 service_account_name = service_account_name[:63]
