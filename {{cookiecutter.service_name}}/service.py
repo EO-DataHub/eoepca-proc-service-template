@@ -609,9 +609,6 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
-        logger.info(conf)
-        logger.info(inputs)
-
         runner = ZooCalrissianRunner(
             cwl=cwl,
             conf=conf,
