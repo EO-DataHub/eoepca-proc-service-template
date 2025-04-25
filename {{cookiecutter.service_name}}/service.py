@@ -579,21 +579,23 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         conf.setdefault("eodhp", {})           
         conf["eodhp"]["serviceAccountNameCaller"] = "default" # need to determine the correct one if user service
-        conf["eodhp"]["serviceAccountNameExecutor"] = "default"
+        conf["eodhp"]["serviceAccountName"] = "default"
+
+        calling_service_account_name = None
 
         if is_user_service:
             calling_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
             name_prefix = f"temp-{calling_namespace}"
-            service_account_name = f"{name_prefix}-{conf['lenv']['usid']}"
-            if len(service_account_name) > 63:
-                service_account_name = service_account_name[:63]
+            calling_service_account_name = f"{name_prefix}-{conf['lenv']['usid']}"
+            if len(calling_service_account_name) > 63:
+                calling_service_account_name = calling_service_account_name[:63]
             calling_service_account = v1.read_namespaced_service_account(name="default", namespace=calling_namespace)
             # Extract annotations
             annotations = calling_service_account.metadata.annotations
             # Create temporary service account for this workspace
             # Define the service account metadata
             service_account = client.V1ServiceAccount(
-                metadata=client.V1ObjectMeta(name=service_account_name, annotations=annotations)
+                metadata=client.V1ObjectMeta(name=calling_service_account_name, annotations=annotations)
             )
 
             # Create the service account in the specified namespace
@@ -601,9 +603,9 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
                 namespace=executing_namespace, body=service_account
             )
 
-            logger.info(f"Service account {service_account_name} created in namespace {executing_namespace}")
+            logger.info(f"Service account {calling_service_account_name} created in namespace {executing_namespace}")
 
-            conf["eodhp"]["serviceAccountNameCaller"] = service_account_name
+            conf["eodhp"]["serviceAccountNameCaller"] = calling_service_account_name
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
@@ -645,7 +647,8 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
         delete_pvc(v1, f"calrissian-wdir-{job_id}", executing_namespace)
 
-        delete_service_account(v1, f"temp-{calling_workspace_name}-{conf['lenv']['usid']}", executing_namespace)
+        if calling_service_account_name:
+            delete_service_account(v1, calling_service_account_name, executing_namespace)
 
         # Deactivate workspace API tokens for both calling and executing workspace
         deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN", {}).get("value"), "CALLING_WORKSPACE_ACCESS_TOKEN")
