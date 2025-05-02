@@ -637,12 +637,12 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         job_id = conf["lenv"]["usid"]
 
         # Delete no longer needed resources
-        delete_configmap(v1, f"params-{job_id}", executing_namespace)
-        delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
-        delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
-        delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
+        delete_configmap(v1, f"{job_id}-params", executing_namespace)
+        delete_configmap(v1, f"{job_id}-cwl-workflow", executing_namespace)
+        delete_configmap(v1, f"{job_id}-pod-node-selector", executing_namespace)
+        delete_configmap(v1, f"{job_id}-pod-env-vars", executing_namespace)
 
-        delete_pvc(v1, f"calrissian-wdir-{job_id}", executing_namespace)
+        delete_pvc(v1, f"{job_id}-calrissian-wdir", executing_namespace)
 
         if calling_service_account_name:
             delete_service_account(v1, calling_service_account_name, executing_namespace)
