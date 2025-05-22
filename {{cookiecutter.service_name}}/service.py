@@ -578,7 +578,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         executing_namespace = get_namespace_from_workspace(custom_api, executing_workspace_name)
 
         conf.setdefault("eodhp", {})           
-        conf["eodhp"]["serviceAccountNameCaller"] = "default" # need to determine the correct one if user service
+        conf["eodhp"]["serviceAccountNameCalling"] = "default" # need to determine the correct one if user service
         conf["eodhp"]["serviceAccountName"] = "default"
 
         calling_service_account_name = None
@@ -605,7 +605,7 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
 
             logger.info(f"Service account {calling_service_account_name} created in namespace {executing_namespace}")
 
-            conf["eodhp"]["serviceAccountNameCaller"] = calling_service_account_name
+            conf["eodhp"]["serviceAccountNameCalling"] = calling_service_account_name
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
