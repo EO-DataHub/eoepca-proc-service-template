@@ -1,5 +1,6 @@
 # see https://zoo-project.github.io/workshops/2014/first_service.html#f1
 import pathlib
+from typing import Optional
 
 try:
     import zoo
@@ -42,6 +43,12 @@ import traceback
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
+
+KEYCLOAK_BASE_URL = os.environ.get("KEYCLOAK_BASE_URL", "keycloak-base-url")
+CLIENT_ID = os.environ.get("CLIENT_ID", "client-id")
+CLIENT_SECRET = os.environ.get("CLIENT_SECRET", "client-secret")
+
+KEYCLOAK_URL = f"https://{KEYCLOAK_BASE_URL}/protocol/openid-connect/revoke"
 
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
@@ -454,19 +461,90 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             raise(e)
 
 
-def delete_configmap(v1, name: str, executing_namespace: str = "default"):
+def deactivate_api_token(token: Optional[str], token_name: str):
+    """
+    Deactivate API Access Token
+    """
+    if not token:
+        logger.error(f"Failed to deactivate token for {token_name}: no token provided")
+        return
+    payload = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "token_type_hint": "access_token",
+        "token": token,
+    }
+
+    response = requests.post(
+        KEYCLOAK_URL,
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
+    if response.status_code == 200:
+        logger.info(f"Token for {token_name} deactivated successfully")
+    else:
+        logger.error(f"Failed to deactivate token for {token_name}: {response.status_code} - {response.text}")
+
+
+def delete_pvc(v1, name: str, namespace: str = "default"):
+    """"
+    Delete the specified Persistent Volume Claim
+    """
+    try:
+        v1.delete_namespaced_persistent_volume_claim(
+            name=name,
+            namespace=namespace,
+            body=client.V1DeleteOptions()
+        )
+        logger.info(f"PVC {name} deleted successfully")
+    except client.exceptions.ApiException as e:
+        logger.error(f"Exception when deleting PVC {name}: {e}")
+
+def delete_service_account(v1, name: str, namespace: str = "default"):
+    """"
+    Delete the specified temporary service account
+    """
+    try:
+        v1.delete_namespaced_service_account(
+            name=name,
+            namespace=namespace,
+            body=client.V1DeleteOptions()
+        )
+        logger.info(f"Service Account {name} deleted successfully")
+    except client.exceptions.ApiException as e:
+        logger.error(f"Exception when deleting Service Account {name}: {e}")
+
+def delete_configmap(v1, name: str, namespace: str = "default"):
     """"
     Delete the specified ConfigMap
     """
     try:
         v1.delete_namespaced_config_map(
             name=name,
-            namespace=executing_namespace,
+            namespace=namespace,
             body=client.V1DeleteOptions()
         )
         logger.info(f"ConfigMap {name} deleted successfully")
     except client.exceptions.ApiException as e:
         logger.error(f"Exception when deleting ConfigMap {name}: {e}")
+
+def get_namespace_from_workspace(custom_api, workspace: str):
+    """"
+    Get the namespace associated with the given workspace
+    """
+    try:
+        workspace = custom_api.get_namespaced_custom_object(
+            group="core.telespazio-uk.io",
+            version="v1alpha1",
+            namespace="workspaces",
+            plural="workspaces",
+            name=workspace,
+        )
+    except Exception as e:
+        logger.error(f"Error in getting {workspace} workspace CRD: {e}")
+        raise e
+    return workspace["spec"]["namespace"]
 
 
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
@@ -481,35 +559,53 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         ) as stream:
             cwl = yaml.safe_load(stream)
 
-        ## Identify the running namespace for the provided workspace ##
+        is_user_service = inputs["executing_workspace"]["value"] != inputs["calling_workspace"]["value"]
 
         # Load kubeconfig
         config.load_incluster_config()
+
+        # Create a CoreV1Api client instance for use later
+        v1 = client.CoreV1Api()
 
         # Create a CustomObjectsApi client instance
         custom_api = client.CustomObjectsApi()
         
         # Extract workspace names
         executing_workspace_name = inputs["executing_workspace"]["value"]
+        calling_workspace_name = inputs["calling_workspace"]["value"]
 
         # Access workspace details for the executing workspace
-        try:
-            executing_workspace = custom_api.get_namespaced_custom_object(
-                group="core.telespazio-uk.io",
-                version="v1alpha1",
-                namespace="workspaces",
-                plural="workspaces",
-                name=executing_workspace_name,
-            )
-        except Exception as e:
-            logger.error(f"Error in getting workspace CRD: {e}")
-            raise e
-        executing_namespace = executing_workspace["spec"]["namespace"]
+        executing_namespace = get_namespace_from_workspace(custom_api, executing_workspace_name)
 
-
-        # Disable the service account, use basic which has no access permissions, forcing to use AWS credentials volume
-        conf.setdefault("eodhp", {})
+        conf.setdefault("eodhp", {})           
+        conf["eodhp"]["serviceAccountNameCalling"] = "default" # need to determine the correct one if user service
         conf["eodhp"]["serviceAccountName"] = "default"
+
+        calling_service_account_name = None
+
+        if is_user_service:
+            calling_namespace = get_namespace_from_workspace(custom_api, calling_workspace_name)
+            name_prefix = f"temp-{calling_namespace}"
+            calling_service_account_name = f"{name_prefix}-{conf['lenv']['usid']}"
+            if len(calling_service_account_name) > 63:
+                calling_service_account_name = calling_service_account_name[:63]
+            calling_service_account = v1.read_namespaced_service_account(name="default", namespace=calling_namespace)
+            # Extract annotations
+            annotations = calling_service_account.metadata.annotations
+            # Create temporary service account for this workspace
+            # Define the service account metadata
+            service_account = client.V1ServiceAccount(
+                metadata=client.V1ObjectMeta(name=calling_service_account_name, annotations=annotations)
+            )
+
+            # Create the service account in the specified namespace
+            created_sa = v1.create_namespaced_service_account(
+                namespace=executing_namespace, body=service_account
+            )
+
+            logger.info(f"Service account {calling_service_account_name} created in namespace {executing_namespace}")
+
+            conf["eodhp"]["serviceAccountNameCalling"] = calling_service_account_name
 
         execution_handler = EoepcaCalrissianRunnerExecutionHandler(conf=conf, inputs=inputs)
 
@@ -540,13 +636,20 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
         # Set job_id
         job_id = conf["lenv"]["usid"]
 
-        # Create a CoreV1Api client instance
-        v1 = client.CoreV1Api()
-
+        # Delete no longer needed resources
         delete_configmap(v1, f"params-{job_id}", executing_namespace)
         delete_configmap(v1, f"cwl-workflow-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-node-selector-{job_id}", executing_namespace)
         delete_configmap(v1, f"pod-env-vars-{job_id}", executing_namespace)
+
+        delete_pvc(v1, f"calrissian-wdir-{job_id}", executing_namespace)
+
+        if calling_service_account_name:
+            delete_service_account(v1, calling_service_account_name, executing_namespace)
+
+        # Deactivate workspace API tokens for both calling and executing workspace
+        deactivate_api_token(inputs.get("CALLING_WORKSPACE_ACCESS_TOKEN", {}).get("value"), "CALLING_WORKSPACE_ACCESS_TOKEN")
+        deactivate_api_token(inputs.get("WORKSPACE_ACCESS_TOKEN", {}).get("value"), "EXECUTING_WORKSPACE_ACCESS_TOKEN")
 
         if exit_status == zoo.SERVICE_SUCCEEDED:
             logger.info(f"Setting Collection into output key {list(outputs.keys())[0]}")
