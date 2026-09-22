@@ -20,7 +20,9 @@ except ImportError:
 
 import json
 import os
+import re
 import sys
+from functools import lru_cache
 from urllib.parse import urlparse
 
 import boto3  # noqa: F401
@@ -29,6 +31,7 @@ import jwt
 import requests
 import yaml
 from botocore.exceptions import ClientError
+from jwt import PyJWKClient
 from loguru import logger
 from pystac import read_file
 from pystac.stac_io import DefaultStacIO, StacIO
@@ -42,6 +45,32 @@ import traceback
 
 logger.remove()
 logger.add(sys.stderr, level="INFO")
+
+KEYCLOAK_BASE_URL = os.environ.get("KEYCLOAK_BASE_URL", "")
+
+# Matches the client IDs tokens for this platform are actually issued under, per the
+# reference implementation in eodh-ac-api/wf-catalogue-service. Overridable per deployment
+# since the Keycloak client/audience isn't guaranteed to be the same everywhere.
+JWT_AUDIENCE_RAW = os.environ.get("JWT_AUDIENCE", "oauth2-proxy-workspaces,oauth2-proxy,account")
+JWT_AUDIENCE = [aud.strip() for aud in JWT_AUDIENCE_RAW.split(",") if aud.strip()]
+
+
+@lru_cache
+def _jwks_client() -> PyJWKClient:
+    """One client per process, so the JWKS document is cached rather than re-fetched from
+    Keycloak on every request. PyJWKClient does this caching internally, but only across
+    calls on the same instance.
+
+    KEYCLOAK_BASE_URL is only required once a JWT actually needs verifying, so it's
+    validated here rather than at import time.
+    """
+    if not KEYCLOAK_BASE_URL:
+        raise RuntimeError("KEYCLOAK_BASE_URL environment variable must be set to verify JWT signatures")
+    # Strip any scheme the operator may have included, since KEYCLOAK_BASE_URL is documented
+    # as a bare host[/path] and we always connect over https ourselves.
+    base_url = re.sub(r"^https?://", "", KEYCLOAK_BASE_URL).rstrip("/")
+    return PyJWKClient(f"https://{base_url}/protocol/openid-connect/certs")
+
 
 class CustomStacIO(DefaultStacIO):
     """Custom STAC IO class that uses boto3 to read from S3."""
@@ -149,8 +178,19 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             # decode the JWT token to get the user name
             if self.ades_rx_token:
+                # The signature is verified against Keycloak's own published key (fetched
+                # via _jwks_client()), rather than trusting an upstream gateway to have
+                # checked it: a gateway sitting in front of the public path does not cover
+                # traffic that reaches this service directly from elsewhere on the cluster
+                # network.
+                signing_key = _jwks_client().get_signing_key_from_jwt(self.ades_rx_token)
                 self.username = self.get_user_name(
-                    jwt.decode(self.ades_rx_token, options={"verify_signature": False})
+                    jwt.decode(
+                        self.ades_rx_token,
+                        signing_key.key,
+                        audience=JWT_AUDIENCE,
+                        algorithms=["RS256"],
+                    )
                 )
 
             if self.use_workspace:
