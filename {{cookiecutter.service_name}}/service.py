@@ -547,8 +547,37 @@ def get_namespace_from_workspace(custom_api, workspace: str):
     return workspace["spec"]["namespace"]
 
 
+def job_volume_exists(runner) -> bool:
+    """
+    Check the calrissian working volume still exists and is not being deleted
+    """
+    context = getattr(getattr(runner, "execution", None), "runtime_context", None)
+    if context is None:
+        return False
+    try:
+        pvc = context.core_v1_api.read_namespaced_persistent_volume_claim(
+            name=context.calrissian_wdir, namespace=context.namespace
+        )
+    except client.exceptions.ApiException as e:
+        if e.status == 404:
+            return False
+        raise
+    return pvc.metadata.deletion_timestamp is None
+
+
+def failure_message(runner) -> str:
+    """
+    Build the failure message, with the reason found by the runner when there is one
+    """
+    reason = getattr(runner, "failure_reason", None)
+    if reason:
+        return f"Execution failed: {reason}"
+    return "Execution failed"
+
+
 def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # noqa
 
+    runner = None
     try:
         with open(
             os.path.join(
@@ -657,18 +686,24 @@ def {{cookiecutter.workflow_id |replace("-", "_")  }}(conf, inputs, outputs): # 
             return zoo.SERVICE_SUCCEEDED
 
         else:
-            conf["lenv"]["message"] = zoo._("Execution failed")
+            conf["lenv"]["message"] = zoo._(failure_message(runner))
             return zoo.SERVICE_FAILED
 
     except Exception as e:
         logger.error("ERROR in processing execution template...")
         logger.info("Try fetching logs if any...")
         try:
-            tool_logs = runner.execution.get_tool_logs()
-            execution_handler.handle_outputs(None, None, None, tool_logs)
+            if job_volume_exists(runner):
+                tool_logs = runner.execution.get_tool_logs()
+                execution_handler.handle_outputs(None, None, None, tool_logs)
+            else:
+                logger.info("job volume is gone, not fetching logs")
         except Exception as e:
             logger.error("Fetching logs failed!"+str(e))
         stack = traceback.format_exc()
         logger.error(stack)
-        conf["lenv"]["message"] = zoo._(f"Exception during execution...\n{stack}\n")
+        if getattr(runner, "failure_reason", None):
+            conf["lenv"]["message"] = zoo._(failure_message(runner))
+        else:
+            conf["lenv"]["message"] = zoo._(f"Exception during execution...\n{stack}\n")
         return zoo.SERVICE_FAILED
