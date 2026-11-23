@@ -431,10 +431,14 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
 
             self.conf['main']['tmpUrl']=self.conf['main']['tmpUrl'].replace("temp/",self.conf["auth_env"]["user"]+"/temp")
 
+            # the logs are in the working directory, whose name is the workflow id and
+            # job id shortened to 63 characters
+            job_folder = os.path.basename(os.getcwd())
+
             servicesLogs = [
                 {
                     "url": f"{self.conf['main']['tmpUrl']}/"
-                            f"{self.conf['lenv']['Identifier']}-{self.conf['lenv']['usid']}/"
+                            f"{job_folder}/"
                             f"{os.path.basename(tool_log)}",
                     "title": f"Tool log {os.path.basename(tool_log)}",
                     "rel": "related",
@@ -450,7 +454,7 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                     servicesLogs.append(
                         {
                             "url": f"{self.conf['main']['tmpUrl']}/"
-                                    f"{self.conf['lenv']['Identifier']}-{self.conf['lenv']['usid']}/"
+                                    f"{job_folder}/"
                                     f"{traceback_file}",
                             "title": "Calrissian traceback",
                             "rel": "related",
