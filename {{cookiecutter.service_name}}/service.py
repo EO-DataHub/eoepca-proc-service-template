@@ -1,5 +1,6 @@
 # see https://zoo-project.github.io/workshops/2014/first_service.html#f1
 import pathlib
+from typing import Optional
 
 try:
     import zoo
@@ -440,15 +441,31 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
                 }
                 for tool_log in tool_logs
             ]
+            # a failed execution has no output, keep the calrissian traceback for the user
+            if output is None:
+                # a later call for the same job has no log, keep the file of the first one
+                traceback_file = getattr(self, "traceback_file", None) or save_failure_traceback(log)
+                self.traceback_file = traceback_file
+                if traceback_file:
+                    servicesLogs.append(
+                        {
+                            "url": f"{self.conf['main']['tmpUrl']}/"
+                                    f"{self.conf['lenv']['Identifier']}-{self.conf['lenv']['usid']}/"
+                                    f"{traceback_file}",
+                            "title": "Calrissian traceback",
+                            "rel": "related",
+                        }
+                    )
             logger.info(f"servicesLogs: {servicesLogs}")
+            # there are no tool logs when the execution fails before its first step
+            if "service_logs" not in self.conf:
+                self.conf["service_logs"] = {}
             for i in range(len(servicesLogs)):
                 okeys = ["url", "title", "rel"]
                 keys = ["url", "title", "rel"]
                 if i > 0:
                     for j in range(len(keys)):
                         keys[j] = keys[j] + "_" + str(i)
-                if "service_logs" not in self.conf:
-                    self.conf["service_logs"] = {}
                 for j in range(len(keys)):
                     self.conf["service_logs"][keys[j]] = servicesLogs[i][okeys[j]]
 
@@ -458,6 +475,47 @@ class EoepcaCalrissianRunnerExecutionHandler(ExecutionHandler):
             logger.error("ERROR in handle_outputs...")
             logger.error(traceback.format_exc())
             raise(e)
+
+
+TRACEBACK_HEADER = "Traceback (most recent call last):"
+MAX_TRACEBACK_LINES = 100
+
+
+def save_failure_traceback(log: Optional[str]) -> Optional[str]:
+    """
+    Write the last traceback of the calrissian log to the job folder, return the file name
+    """
+    try:
+        from zoo_calrissian_runner import redact_secrets
+    except ImportError:
+        # runners that cannot redact must not publish log lines, they can hold credentials
+        return None
+    lines = (log or "").splitlines()
+    starts = [i for i, line in enumerate(lines) if line.strip() == TRACEBACK_HEADER]
+    if not starts:
+        return None
+    # the frames are indented, the first line that is not is the exception; later lines
+    # are ordinary log output and stay out
+    selected = [lines[starts[-1]].strip()]
+    for line in lines[starts[-1] + 1:]:
+        selected.append(line)
+        if line.strip() and not line[0].isspace():
+            break
+    selected = selected[:MAX_TRACEBACK_LINES]
+    text = "\n".join(redact_secrets(line) for line in selected) + "\n"
+
+    # a workflow step can have any name, never overwrite its log
+    for name in ["calrissian-traceback.log"] + [f"calrissian-traceback-{n}.log" for n in range(1, 10)]:
+        try:
+            with open(name, "x") as traceback_log:
+                traceback_log.write(text)
+            return name
+        except FileExistsError:
+            continue
+        except OSError as e:
+            logger.warning(f"could not save the calrissian traceback: {e}")
+            return None
+    return None
 
 
 def delete_configmap(v1, name: str, executing_namespace: str = "default"):
